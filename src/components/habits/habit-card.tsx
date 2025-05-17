@@ -1,3 +1,4 @@
+
 "use client";
 import type { Habit } from '@/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckSquare, Edit, Flame, Repeat, Target, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
-import { STAT_NAMES } from '@/config/game-config';
+// STAT_NAMES ya no se usa directamente aquí para el nombre del stat, se muestra el nombre dinámico
 
 interface HabitCardProps {
   habit: Habit;
@@ -36,30 +37,30 @@ export function HabitCard({ habit, onEdit }: HabitCardProps) {
         {habit.description && <CardDescription className="text-sm text-muted-foreground line-clamp-2">{habit.description}</CardDescription>}
         <div className="flex items-center text-xs text-muted-foreground">
           <Repeat className="mr-1.5 h-4 w-4 text-primary" />
-          Frequency: <span className="font-semibold ml-1 text-foreground">{getFrequencyText()}</span>
+          Frecuencia: <span className="font-semibold ml-1 text-foreground">{getFrequencyText()}</span>
         </div>
         {habit.targetStat && (
           <div className="flex items-center text-xs text-muted-foreground">
             <Target className="mr-1.5 h-4 w-4 text-accent" />
-            Target Stat: <span className="font-semibold ml-1 text-foreground">{STAT_NAMES[habit.targetStat]} (+{habit.statImprovementValue})</span>
+            Atributo Objetivo: <span className="font-semibold ml-1 text-foreground">{habit.targetStat} (+{habit.statImprovementValue})</span>
           </div>
         )}
         <div className="flex items-center text-xs text-muted-foreground">
           <Flame className="mr-1.5 h-4 w-4 text-orange-500" />
-          Current Streak: <span className="font-bold text-orange-400">{habit.currentStreak}</span>
+          Racha Actual: <span className="font-bold text-orange-400">{habit.currentStreak}</span>
           <span className="mx-2">|</span>
-          Longest: <span className="font-semibold text-orange-500">{habit.longestStreak}</span>
+          Más Larga: <span className="font-semibold text-orange-500">{habit.longestStreak}</span>
         </div>
       </CardContent>
       <CardFooter className="p-4 bg-muted/20 flex justify-between items-center">
         <Button onClick={() => completeHabit(habit.id)} size="sm" className="p5-button-primary text-sm">
-          <CheckSquare className="mr-2 h-4 w-4" /> Mark Done
+          <CheckSquare className="mr-2 h-4 w-4" /> Marcar Hecho
         </Button>
         <div className="flex space-x-2">
-          <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8 hover:text-accent" aria-label="Edit habit">
+          <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8 hover:text-accent" aria-label="Editar disciplina">
             <Edit className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => deleteHabit(habit.id)} className="h-8 w-8 hover:text-destructive" aria-label="Delete habit">
+          <Button variant="ghost" size="icon" onClick={() => deleteHabit(habit.id)} className="h-8 w-8 hover:text-destructive" aria-label="Eliminar disciplina">
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>

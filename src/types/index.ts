@@ -1,20 +1,21 @@
 
 export interface PlayerStats {
-  power: number;
-  guts: number;
-  intel: number;
-  charm: number;
-  focus: number;
+  [key: string]: number; // Stats ahora son dinámicos
 }
 
 export interface Player {
   id: string;
-  name: string;
-  avatarUrl: string;
-  dataAiHint?: string; // Made optional to align with PlayerAvatar props
+  name: string; // Se establecerá en el quiz
+  avatarUrl: string; // Se establecerá en el quiz
+  dataAiHint?: string;
   level: number;
   xp: number;
-  stats: PlayerStats;
+  stats: PlayerStats; // Stats dinámicos
+  age?: number;
+  genderAvatarKey?: string; // e.g., 'avatar1', 'avatar2'
+  improvementAreas?: string; // Texto del usuario
+  statDescriptions?: { [key: string]: string }; // Descripciones para los stats dinámicos
+  hasCompletedQuiz: boolean;
 }
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Done';
@@ -40,8 +41,8 @@ export interface Habit {
   description?: string;
   type: HabitType;
   frequency: HabitFrequency;
-  targetStat?: keyof PlayerStats;
-  statImprovementValue: number; // Can be positive for Good, negative for Bad (if not completed)
+  targetStat?: string; // Ahora será el nombre del stat dinámico
+  statImprovementValue: number;
   currentStreak: number;
   longestStreak: number;
   lastCompletedDate?: string; // ISO date string (YYYY-MM-DD) (from Firestore Timestamp)

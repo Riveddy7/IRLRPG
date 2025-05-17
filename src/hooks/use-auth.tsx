@@ -12,20 +12,13 @@ import {
   UserCredential
 } from 'firebase/auth';
 import { doc, setDoc, Timestamp, writeBatch, collection, getDoc } from 'firebase/firestore';
-import type { Player, Task, Habit } from '@/types';
+import type { Player, Task, Habit } from '@/types'; // Player ahora tiene hasCompletedQuiz
 import { useToast } from './use-toast';
 import { useRouter } from 'next/navigation';
 
-// Default data for new users, similar to what was in useLifeQuestStore
-const defaultTasksData: Omit<Task, 'id' | 'createdAt' | 'status' | 'userId'>[] = [
-  { title: 'Conquer The Mementos', description: 'Reach the depths of Mementos', priority: 'Critical', xpReward: 100 },
-  { title: 'Ace Midterms', description: 'Study hard and get top scores', priority: 'High', xpReward: 50, dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() },
-];
-
-const defaultHabitsData: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'lastCompletedDate' | 'userId'>[] = [
-  { title: 'Daily Training', type: 'Good', frequency: 'Daily', targetStat: 'power', statImprovementValue: 1 },
-];
-
+// Default data for new users - Tareas y hábitos se crearán después del quiz o con valores muy genéricos
+// Por ahora, no crearemos tareas/hábitos por defecto aquí, ya que los stats se definen en el quiz.
+// Esto podría cambiar si queremos tareas genéricas que no dependan de stats.
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -57,64 +50,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const createNewPlayerDocument = useCallback(async (userId: string, email: string | null) => {
     const playerDocRef = doc(db, 'players', userId);
     
-    // Check if player document already exists
     const playerDocSnap = await getDoc(playerDocRef);
     if (playerDocSnap.exists()) {
       console.log(`Player document for UID ${userId} already exists. Skipping creation.`);
       return;
     }
 
+    // Perfil inicial mínimo. El resto se completa en el quiz.
     const newPlayerProfile: Player = {
       id: userId,
-      name: email?.split('@')[0] || 'New Phantom',
-      avatarUrl: `https://placehold.co/128x128.png?text=${(email?.charAt(0) || 'N').toUpperCase()}`,
-      dataAiHint: 'gamer avatar',
+      name: email?.split('@')[0] || 'Novato', // Placeholder, se cambiará en el quiz
+      avatarUrl: `https://placehold.co/128x128.png?text=${(email?.charAt(0) || 'N').toUpperCase()}`, // Placeholder
+      dataAiHint: 'avatar generico', // Placeholder
       level: 1,
       xp: 0,
-      stats: { power: 5, guts: 5, intel: 5, charm: 5, focus: 5 },
+      stats: {}, // Se llenará en el quiz
+      statDescriptions: {}, // Se llenará en el quiz
+      hasCompletedQuiz: false, // Clave para el flujo del quiz
     };
     
     try {
       await setDoc(playerDocRef, newPlayerProfile);
-      toast({ title: "Welcome, Phantom!", description: "Your LifeQuest profile is ready!"});
-
-      // Add default tasks and habits for the new user
-      const batch = writeBatch(db);
-      defaultTasksData.forEach(taskData => {
-        const taskColRef = collection(db, 'players', userId, 'tasks');
-        const newTaskRef = doc(taskColRef); // Auto-generate ID
-        
-        const taskPayload: { [key: string]: any } = {
-          ...taskData, // Includes title, description, priority, xpReward
-          status: 'To Do',
-          createdAt: Timestamp.now(),
-        };
-
-        if (taskData.dueDate) {
-          taskPayload.dueDate = Timestamp.fromDate(new Date(taskData.dueDate));
-        }
-        // If taskData.dueDate is undefined, the dueDate field will not be set in taskPayload
-
-        batch.set(newTaskRef, taskPayload);
-      });
-
-      defaultHabitsData.forEach(habitData => {
-        const habitColRef = collection(db, 'players', userId, 'habits');
-        const newHabitRef = doc(habitColRef); // Auto-generate ID
-        batch.set(newHabitRef, {
-          ...habitData,
-          currentStreak: 0,
-          longestStreak: 0,
-          createdAt: Timestamp.now(),
-        });
-      });
-      await batch.commit();
-      toast({ title: "Initial setup complete!", description: "Default tasks and habits added."});
-
+      // No mostramos toast aquí, el flujo continuará al quiz.
+      // Las tareas y hábitos por defecto se podrían añadir después del quiz si es necesario,
+      // o el quiz mismo podría generar algunas tareas iniciales.
     } catch (e) {
-      console.error("Error creating player document or initial data:", e);
-      toast({ title: "Profile Setup Error", description: "Could not create your player profile or initial data.", variant: "destructive" });
-      throw e; // Re-throw to be caught by registerUser
+      console.error("Error creating initial player document:", e);
+      toast({ title: "Error de Configuración de Perfil", description: "No se pudo crear el perfil inicial del jugador.", variant: "destructive" });
+      throw e; 
     }
   }, [toast]);
 
@@ -125,15 +88,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       await createNewPlayerDocument(userCredential.user.uid, userCredential.user.email);
-      toast({ title: 'Registration Successful!', description: 'Welcome to LifeQuest RPG!' });
-      router.push('/dashboard'); 
+      toast({ title: '¡Registro Exitoso!', description: 'Ahora personaliza tu aventura.' });
+      // router.push('/quiz'); // La redirección al quiz se manejará en AppLayout
+      router.push('/dashboard'); // Esto activará la lógica en AppLayout para ir al quiz si es necesario
       return userCredential;
     } catch (e: any) {
       console.error("Registration error:", e);
-      // If error is because user already exists, Firebase auth itself will throw 'auth/email-already-in-use'
-      // Our createNewPlayerDocument also checks if player doc exists, so it won't try to overwrite.
-      setError(e.message || 'Failed to register. Please try again.');
-      toast({ title: 'Registration Failed', description: e.message || 'Please check your details and try again.', variant: 'destructive' });
+      setError(e.message || 'Falló el registro. Intenta de nuevo.');
+      toast({ title: 'Falló el Registro', description: e.message || 'Verifica tus datos e intenta de nuevo.', variant: 'destructive' });
       setIsLoading(false);
       return null;
     }
@@ -144,13 +106,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-      toast({ title: 'Login Successful!', description: 'Welcome back!' });
+      toast({ title: '¡Login Exitoso!', description: '¡Bienvenido de vuelta!' });
+      // router.push('/dashboard'); // AppLayout manejará la redirección al quiz si es necesario
       router.push('/dashboard');
       return userCredential;
     } catch (e: any) {
       console.error("Login error:", e);
-      setError(e.message || 'Failed to login. Please check your credentials.');
-      toast({ title: 'Login Failed', description: e.message || 'Incorrect email or password.', variant: 'destructive' });
+      setError(e.message || 'Falló el login. Verifica tus credenciales.');
+      toast({ title: 'Falló el Login', description: e.message || 'Email o contraseña incorrectos.', variant: 'destructive' });
       setIsLoading(false);
       return null;
     }
@@ -161,12 +124,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await signOut(auth);
       setUser(null); 
-      toast({ title: 'Logged Out', description: 'See you next time!' });
+      toast({ title: 'Sesión Cerrada', description: '¡Hasta la próxima aventura!' });
       router.push('/login'); 
     } catch (e: any) {
       console.error("Logout error:", e);
-      setError(e.message || 'Failed to logout.');
-      toast({ title: 'Logout Failed', description: e.message, variant: 'destructive' });
+      setError(e.message || 'Falló el logout.');
+      toast({ title: 'Falló el Logout', description: e.message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }

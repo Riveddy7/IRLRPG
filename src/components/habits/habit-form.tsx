@@ -1,3 +1,4 @@
+
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -15,15 +16,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Habit, HabitType, HabitFrequency, PlayerStats } from "@/types";
-import { HABIT_TYPE_OPTIONS, HABIT_FREQUENCY_OPTIONS, HABIT_TARGET_STAT_OPTIONS, STAT_NAMES } from "@/config/game-config";
+import type { Habit, HabitType, HabitFrequency } from "@/types";
+import { HABIT_TYPE_OPTIONS, HABIT_FREQUENCY_OPTIONS } from "@/config/game-config";
+import { useLifeQuest } from "@/hooks/use-life-quest-store"; // Para obtener los stats del jugador
 
 const habitFormSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters.").max(100),
+  title: z.string().min(3, "El título debe tener al menos 3 caracteres.").max(100),
   description: z.string().max(500).optional(),
   type: z.enum(HABIT_TYPE_OPTIONS as [string, ...string[]]),
-  frequency: z.enum(HABIT_FREQUENCY_OPTIONS as [string, ...string[]]), // Simplified for now
-  targetStat: z.enum(HABIT_TARGET_STAT_OPTIONS as [keyof PlayerStats, ...(keyof PlayerStats)[]]).optional(),
+  frequency: z.enum(HABIT_FREQUENCY_OPTIONS as [string, ...string[]]),
+  targetStat: z.string().optional(), // Será el nombre del stat dinámico
   statImprovementValue: z.coerce.number().min(0).max(10).default(1),
 });
 
@@ -36,14 +38,17 @@ interface HabitFormProps {
   submitButtonText?: string;
 }
 
-export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save Discipline" }: HabitFormProps) {
+export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Guardar Disciplina" }: HabitFormProps) {
+  const { player } = useLifeQuest();
+  const availableStats = player && player.stats ? Object.keys(player.stats) : [];
+
   const form = useForm<HabitFormValues>({
     resolver: zodResolver(habitFormSchema),
     defaultValues: {
       title: habit?.title || "",
       description: habit?.description || "",
       type: habit?.type || "Good",
-      frequency: (Array.isArray(habit?.frequency) ? "Daily" : habit?.frequency) || "Daily", // Simplification
+      frequency: (Array.isArray(habit?.frequency) ? "Daily" : habit?.frequency) || "Daily",
       targetStat: habit?.targetStat || undefined,
       statImprovementValue: habit?.statImprovementValue || 1,
     },
@@ -61,9 +66,9 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save 
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base">Discipline Title</FormLabel>
+              <FormLabel className="text-base">Título de la Disciplina</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Morning Meditation" {...field} className="text-base" />
+                <Input placeholder="Ej: Meditación Matutina" {...field} className="text-base" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -74,9 +79,9 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save 
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Details (Optional)</FormLabel>
+              <FormLabel>Detalles (Opcional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Describe the habit..." {...field} rows={3} />
+                <Textarea placeholder="Describe la disciplina..." {...field} rows={3} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -88,11 +93,11 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save 
             name="type"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Type</FormLabel>
+                <FormLabel>Tipo</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder="Selecciona tipo" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -101,7 +106,7 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save 
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Good to build, Bad to break.</FormDescription>
+                <FormDescription>Buena para construir, Mala para romper.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -111,18 +116,17 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save 
             name="frequency"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Frequency</FormLabel>
+                <FormLabel>Frecuencia</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select frequency" />
+                      <SelectValue placeholder="Selecciona frecuencia" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {HABIT_FREQUENCY_OPTIONS.map(option => (
                       <SelectItem key={option} value={option}>{option}</SelectItem>
                     ))}
-                    {/* Add custom frequency later */}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -136,21 +140,21 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save 
             name="targetStat"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Target Attribute (Optional)</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormLabel>Atributo Objetivo (Opcional)</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={availableStats.length === 0}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select attribute" />
+                      <SelectValue placeholder={availableStats.length > 0 ? "Selecciona atributo" : "No hay atributos definidos"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {HABIT_TARGET_STAT_OPTIONS.map(statKey => (
-                      <SelectItem key={statKey} value={statKey}>{STAT_NAMES[statKey] || statKey}</SelectItem>
+                    <SelectItem value="">Ninguno</SelectItem>
+                    {availableStats.map(statKey => (
+                      <SelectItem key={statKey} value={statKey}>{statKey}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Which attribute this habit improves.</FormDescription>
+                <FormDescription>Atributo que mejora esta disciplina.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -160,11 +164,11 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save 
             name="statImprovementValue"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Attribute Boost</FormLabel>
+                <FormLabel>Impulso de Atributo</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 1" {...field} />
+                  <Input type="number" placeholder="Ej: 1" {...field} />
                 </FormControl>
-                <FormDescription>Points added to attribute on completion.</FormDescription>
+                <FormDescription>Puntos añadidos al completar.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -173,7 +177,7 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Save 
 
         <div className="flex justify-end space-x-3 pt-4">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" className="p5-button-primary">
             {submitButtonText}
