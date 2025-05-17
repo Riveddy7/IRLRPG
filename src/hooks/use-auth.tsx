@@ -11,7 +11,7 @@ import {
   signOut,
   UserCredential
 } from 'firebase/auth';
-import { doc, setDoc, Timestamp, writeBatch, collection } from 'firebase/firestore';
+import { doc, setDoc, Timestamp, writeBatch, collection, getDoc } from 'firebase/firestore';
 import type { Player, Task, Habit } from '@/types';
 import { useToast } from './use-toast';
 import { useRouter } from 'next/navigation';
@@ -56,6 +56,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const createNewPlayerDocument = useCallback(async (userId: string, email: string | null) => {
     const playerDocRef = doc(db, 'players', userId);
+    
+    // Check if player document already exists
+    const playerDocSnap = await getDoc(playerDocRef);
+    if (playerDocSnap.exists()) {
+      console.log(`Player document for UID ${userId} already exists. Skipping creation.`);
+      return;
+    }
+
     const newPlayerProfile: Player = {
       id: userId,
       name: email?.split('@')[0] || 'New Phantom',
@@ -75,13 +83,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       defaultTasksData.forEach(taskData => {
         const taskColRef = collection(db, 'players', userId, 'tasks');
         const newTaskRef = doc(taskColRef); // Auto-generate ID
-        batch.set(newTaskRef, {
-          ...taskData,
+        
+        const taskPayload: { [key: string]: any } = {
+          ...taskData, // Includes title, description, priority, xpReward
           status: 'To Do',
           createdAt: Timestamp.now(),
-          dueDate: taskData.dueDate ? Timestamp.fromDate(new Date(taskData.dueDate)) : undefined,
-        });
+        };
+
+        if (taskData.dueDate) {
+          taskPayload.dueDate = Timestamp.fromDate(new Date(taskData.dueDate));
+        }
+        // If taskData.dueDate is undefined, the dueDate field will not be set in taskPayload
+
+        batch.set(newTaskRef, taskPayload);
       });
+
       defaultHabitsData.forEach(habitData => {
         const habitColRef = collection(db, 'players', userId, 'habits');
         const newHabitRef = doc(habitColRef); // Auto-generate ID
@@ -98,9 +114,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       console.error("Error creating player document or initial data:", e);
       toast({ title: "Profile Setup Error", description: "Could not create your player profile or initial data.", variant: "destructive" });
-      // Potentially sign out the user if profile creation is critical
-      // await signOut(auth); 
-      // setUser(null); // Reflect this in state immediately
       throw e; // Re-throw to be caught by registerUser
     }
   }, [toast]);
@@ -113,10 +126,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       await createNewPlayerDocument(userCredential.user.uid, userCredential.user.email);
       toast({ title: 'Registration Successful!', description: 'Welcome to LifeQuest RPG!' });
-      router.push('/dashboard'); // Redirect after successful registration and profile creation
+      router.push('/dashboard'); 
       return userCredential;
     } catch (e: any) {
       console.error("Registration error:", e);
+      // If error is because user already exists, Firebase auth itself will throw 'auth/email-already-in-use'
+      // Our createNewPlayerDocument also checks if player doc exists, so it won't try to overwrite.
       setError(e.message || 'Failed to register. Please try again.');
       toast({ title: 'Registration Failed', description: e.message || 'Please check your details and try again.', variant: 'destructive' });
       setIsLoading(false);
@@ -145,9 +160,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       await signOut(auth);
-      setUser(null); // Ensure local state is updated immediately
+      setUser(null); 
       toast({ title: 'Logged Out', description: 'See you next time!' });
-      router.push('/login'); // Redirect to login after logout
+      router.push('/login'); 
     } catch (e: any) {
       console.error("Logout error:", e);
       setError(e.message || 'Failed to logout.');
