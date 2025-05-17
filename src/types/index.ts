@@ -1,3 +1,4 @@
+
 export interface PlayerStats {
   power: number;
   guts: number;
@@ -10,6 +11,7 @@ export interface Player {
   id: string;
   name: string;
   avatarUrl: string;
+  dataAiHint?: string; // Made optional to align with PlayerAvatar props
   level: number;
   xp: number;
   stats: PlayerStats;
@@ -23,10 +25,10 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
-  dueDate?: string; // ISO string
+  dueDate?: string; // ISO string (from Firestore Timestamp)
   priority: TaskPriority;
   xpReward: number;
-  createdAt: string; // ISO string
+  createdAt: string; // ISO string (from Firestore Timestamp)
 }
 
 export type HabitType = 'Good' | 'Bad'; // Good to build, Bad to break
@@ -42,6 +44,6 @@ export interface Habit {
   statImprovementValue: number; // Can be positive for Good, negative for Bad (if not completed)
   currentStreak: number;
   longestStreak: number;
-  lastCompletedDate?: string; // ISO string
-  createdAt: string; // ISO string
+  lastCompletedDate?: string; // ISO date string (YYYY-MM-DD) (from Firestore Timestamp)
+  createdAt: string; // ISO string (from Firestore Timestamp)
 }
