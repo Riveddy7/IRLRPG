@@ -1,8 +1,10 @@
+
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { LifeQuestProvider } from '@/hooks/use-life-quest-store';
+import { AuthProvider } from '@/hooks/use-auth'; // Import AuthProvider
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -27,10 +29,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
-        <LifeQuestProvider>
-          {children}
-          <Toaster />
-        </LifeQuestProvider>
+        <AuthProvider> {/* Wrap with AuthProvider */}
+          <LifeQuestProvider>
+            {children}
+            <Toaster />
+          </LifeQuestProvider>
+        </AuthProvider>
       </body>
     </html>
   );

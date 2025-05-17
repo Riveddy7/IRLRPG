@@ -17,17 +17,15 @@ import {
   query,
   onSnapshot,
   Timestamp,
-  writeBatch,
-  serverTimestamp // Placeholder, will use Timestamp.now() for client
+  // serverTimestamp, // Not used directly, Timestamp.now() on client for creation
 } from 'firebase/firestore';
-
-// const LOCAL_STORAGE_KEY = 'lifeQuestRPGState'; // No longer used
+import { useAuth } from './use-auth'; // Import useAuth
 
 interface LifeQuestContextType {
   player: Player | null;
   tasks: Task[];
   habits: Habit[];
-  isLoading: boolean;
+  isLoading: boolean; // This will reflect loading of LifeQuest data, not auth state
   addTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'status'>) => Promise<void>;
   updateTask: (taskId: string, taskData: Partial<Omit<Task, 'id' | 'createdAt'>>) => Promise<void>;
   updateTaskStatus: (taskId: string, status: TaskStatus) => Promise<void>;
@@ -40,91 +38,58 @@ interface LifeQuestContextType {
 
 const LifeQuestContext = createContext<LifeQuestContextType | undefined>(undefined);
 
-const initialPlayer: Player = {
-  id: 'player1', // This ID will be used as the document ID in Firestore
-  name: 'Phantom User',
-  avatarUrl: 'https://placehold.co/128x128.png',
-  dataAiHint: 'gamer avatar',
-  level: 1,
-  xp: 0,
-  stats: { power: 5, guts: 5, intel: 5, charm: 5, focus: 5 },
-};
-
-const defaultTasksData: Omit<Task, 'id' | 'createdAt' | 'status'>[] = [
-  { title: 'Conquer The Mementos', description: 'Reach the depths of Mementos', priority: 'Critical', xpReward: 100 },
-  { title: 'Ace Midterms', description: 'Study hard and get top scores', priority: 'High', xpReward: 50, dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() },
-];
-
-const defaultHabitsData: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'lastCompletedDate'>[] = [
-  { title: 'Daily Training', type: 'Good', frequency: 'Daily', targetStat: 'power', statImprovementValue: 1 },
-];
-
-
 export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
+  const { user, isLoading: authIsLoading, createNewPlayerDocument } = useAuth(); // Get user and auth loading state
   const [player, setPlayer] = useState<Player | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // For LifeQuest data loading
   const { toast } = useToast();
   
-  const playerId = initialPlayer.id; // For now, we'll use a fixed player ID
+  const userId = user?.uid; // Use the authenticated user's ID
 
-  // Fetch initial data and set up listeners
   useEffect(() => {
-    if (!playerId) {
+    if (authIsLoading) {
+      setIsLoading(true); // If auth is loading, LifeQuest data is also effectively loading
+      return;
+    }
+
+    if (!userId) {
+      // No user logged in, reset state and stop loading
+      setPlayer(null);
+      setTasks([]);
+      setHabits([]);
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
 
-    const playerDocRef = doc(db, 'players', playerId);
+    setIsLoading(true); // Start loading LifeQuest data for the logged-in user
+    const playerDocRef = doc(db, 'players', userId);
 
     const unsubscribePlayer = onSnapshot(playerDocRef, async (docSnap) => {
       if (docSnap.exists()) {
         setPlayer(docSnap.data() as Player);
       } else {
-        // Player doesn't exist, create them with initial data
-        try {
-          await setDoc(playerDocRef, initialPlayer);
-          setPlayer(initialPlayer);
-          toast({ title: "Welcome, Phantom User!", description: "Your LifeQuest journey begins!"});
-
-          // Add default tasks and habits
-          const batch = writeBatch(db);
-          defaultTasksData.forEach(taskData => {
-            const taskColRef = collection(db, 'players', playerId, 'tasks');
-            const newTaskRef = doc(taskColRef); // Auto-generate ID
-            batch.set(newTaskRef, {
-              ...taskData,
-              status: 'To Do',
-              createdAt: Timestamp.now(),
-              dueDate: taskData.dueDate ? Timestamp.fromDate(new Date(taskData.dueDate)) : undefined,
-            });
-          });
-          defaultHabitsData.forEach(habitData => {
-            const habitColRef = collection(db, 'players', playerId, 'habits');
-            const newHabitRef = doc(habitColRef); // Auto-generate ID
-            batch.set(newHabitRef, {
-              ...habitData,
-              currentStreak: 0,
-              longestStreak: 0,
-              createdAt: Timestamp.now(),
-            });
-          });
-          await batch.commit();
-
-        } catch (error) {
-          console.error("Error creating player or initial data:", error);
-          toast({ title: "Error", description: "Could not initialize player data.", variant: "destructive" });
-        }
+        // Player document doesn't exist for this UID.
+        // This should ideally be handled at registration by createNewPlayerDocument in useAuth.
+        // If we reach here, it might mean an issue or a user exists in Auth but not Firestore.
+        // For robustness, we could attempt to create it, or log an error.
+        // For now, we assume createNewPlayerDocument handles it.
+        // If it was just created, this listener will pick it up.
+        // If not, it might be an orphaned auth user.
+        console.warn(`Player document for UID ${userId} not found. It should have been created on registration.`);
+        // To prevent errors, set player to null or a default state if desired
+        setPlayer(null); 
+        // Optionally, try to create it now if it's missing
+        // if(user?.email) await createNewPlayerDocument(userId, user.email);
       }
     }, (error) => {
-      console.error("Error fetching player data:", error);
+      console.error(`Error fetching player data for UID ${userId}:`, error);
       toast({ title: "Error", description: "Could not fetch player data.", variant: "destructive" });
-      // setIsLoading(false); // Keep true if player is essential
+      setPlayer(null); // Reset on error
     });
 
-    const tasksQuery = query(collection(db, 'players', playerId, 'tasks'));
+    const tasksQuery = query(collection(db, 'players', userId, 'tasks'));
     const unsubscribeTasks = onSnapshot(tasksQuery, (querySnapshot) => {
       const tasksData = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -137,11 +102,11 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       });
       setTasks(tasksData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     }, (error) => {
-      console.error("Error fetching tasks:", error);
+      console.error(`Error fetching tasks for UID ${userId}:`, error);
       toast({ title: "Error", description: "Could not fetch tasks.", variant: "destructive" });
     });
 
-    const habitsQuery = query(collection(db, 'players', playerId, 'habits'));
+    const habitsQuery = query(collection(db, 'players', userId, 'habits'));
     const unsubscribeHabits = onSnapshot(habitsQuery, (querySnapshot) => {
       const habitsData = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -154,26 +119,36 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       });
       setHabits(habitsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     }, (error) => {
-      console.error("Error fetching habits:", error);
+      console.error(`Error fetching habits for UID ${userId}:`, error);
       toast({ title: "Error", description: "Could not fetch habits.", variant: "destructive" });
     });
     
-    // Determine loading state after all initial fetches/setups might be attempted.
-    // A more robust solution might involve Promise.all or tracking individual loading states.
-    Promise.all([getDoc(playerDocRef)]).finally(() => setIsLoading(false));
-
+    // Combined loading state, set to false once all initial listeners are established
+    // For a more accurate loading state, you might track individual loads.
+    // This simplified approach assumes listeners are set up quickly.
+    // Ensure this is after all snapshot listeners are attached
+    const checkInitialLoad = async () => {
+        try {
+            await getDoc(playerDocRef); // Check if player doc exists or attempt to load it.
+        } catch(e) {
+            // Error already handled by onSnapshot error callback
+        } finally {
+            setIsLoading(false); // Stop loading once the attempt is made
+        }
+    };
+    checkInitialLoad();
 
     return () => {
       unsubscribePlayer();
       unsubscribeTasks();
       unsubscribeHabits();
     };
-  }, [playerId, toast]);
+  }, [userId, authIsLoading, toast, createNewPlayerDocument, user?.email]);
 
 
   const addXP = useCallback(async (amount: number) => {
-    if (!player) return;
-    const playerDocRef = doc(db, 'players', playerId);
+    if (!userId || !player) return; // Ensure userId and player are available
+    const playerDocRef = doc(db, 'players', userId);
     const newXP = player.xp + amount;
     const newLevel = getLevelFromXP(newXP);
     
@@ -187,17 +162,17 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       });
     }
     try {
-      await updateDoc(playerDocRef, updates);
+      await updateDoc(playerDocRef, updates as any); // Using 'as any' to bypass strict Partial<Player> type if needed
     } catch (error) {
       console.error("Error updating XP:", error);
       toast({ title: "Error", description: "Could not update XP.", variant: "destructive" });
     }
-  }, [player, playerId, toast]);
+  }, [player, userId, toast]);
 
   const updatePlayerStats = useCallback(async (stat: keyof PlayerStats, valueChange: number) => {
-    if (!player) return;
-    const playerDocRef = doc(db, 'players', playerId);
-    const newStatValue = Math.max(0, player.stats[stat] + valueChange);
+    if (!userId || !player) return;
+    const playerDocRef = doc(db, 'players', userId);
+    const newStatValue = Math.max(0, (player.stats[stat] || 0) + valueChange);
     try {
       await updateDoc(playerDocRef, {
         [`stats.${stat}`]: newStatValue,
@@ -207,12 +182,15 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error updating player stats:", error);
       toast({ title: "Error", description: "Could not update player stats.", variant: "destructive" });
     }
-  }, [player, playerId, toast]);
+  }, [player, userId, toast]);
 
 
   const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'status'>) => {
-    if (!playerId) return;
-    const taskColRef = collection(db, 'players', playerId, 'tasks');
+    if (!userId) {
+      toast({ title: "Not Logged In", description: "You must be logged in to add tasks.", variant: "destructive"});
+      return;
+    }
+    const taskColRef = collection(db, 'players', userId, 'tasks');
     try {
       const newTaskPayload: any = {
         ...taskData,
@@ -231,16 +209,13 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateTask = async (taskId: string, taskData: Partial<Omit<Task, 'id' | 'createdAt'>>) => {
-    if (!playerId) return;
-    const taskDocRef = doc(db, 'players', playerId, 'tasks', taskId);
+    if (!userId) return;
+    const taskDocRef = doc(db, 'players', userId, 'tasks', taskId);
     try {
       const updatePayload: any = { ...taskData };
       if (taskData.dueDate) {
         updatePayload.dueDate = Timestamp.fromDate(new Date(taskData.dueDate));
       } else if (taskData.hasOwnProperty('dueDate') && taskData.dueDate === undefined) {
-         // Explicitly remove dueDate if set to undefined. Firestore needs deleteField for this,
-         // or ensure the form passes null if it means to clear it and handle nulls.
-         // For simplicity, we'll let it set to null if passed as undefined.
          updatePayload.dueDate = null; 
       }
 
@@ -253,14 +228,14 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateTaskStatus = async (taskId: string, status: TaskStatus) => {
-    if (!playerId) return;
-    const taskDocRef = doc(db, 'players', playerId, 'tasks', taskId);
+    if (!userId) return;
+    const taskDocRef = doc(db, 'players', userId, 'tasks', taskId);
     try {
       const taskSnap = await getDoc(taskDocRef);
       if (taskSnap.exists()) {
-        const task = taskSnap.data() as Task;
+        const task = taskSnap.data() as Task; // Make sure Task type includes xpReward
         if (status === 'Done' && task.status !== 'Done') {
-          addXP(task.xpReward); // addXP will show its own toast
+          addXP(task.xpReward);
         } else {
            toast({ title: "Mission Status Updated!", description: `Mission set to ${status}.` });
         }
@@ -273,8 +248,8 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const deleteTask = async (taskId: string) => {
-    if (!playerId) return;
-    const taskDocRef = doc(db, 'players', playerId, 'tasks', taskId);
+    if (!userId) return;
+    const taskDocRef = doc(db, 'players', userId, 'tasks', taskId);
     try {
       await deleteDoc(taskDocRef);
       toast({ title: "Mission Abandoned.", variant: 'destructive' });
@@ -285,15 +260,17 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addHabit = async (habitData: Omit<Habit, 'id' | 'createdAt' | 'currentStreak' | 'longestStreak' | 'lastCompletedDate'>) => {
-    if (!playerId) return;
-    const habitColRef = collection(db, 'players', playerId, 'habits');
+    if (!userId) {
+      toast({ title: "Not Logged In", description: "You must be logged in to add habits.", variant: "destructive"});
+      return;
+    }
+    const habitColRef = collection(db, 'players', userId, 'habits');
     try {
       await addDoc(habitColRef, {
         ...habitData,
         currentStreak: 0,
         longestStreak: 0,
         createdAt: Timestamp.now(),
-        // lastCompletedDate is not set on creation
       });
       toast({ title: "Discipline Established!", description: `New habit "${habitData.title}" formed.` });
     } catch (error) {
@@ -303,10 +280,10 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateHabit = async (habitId: string, habitData: Partial<Omit<Habit, 'id' | 'createdAt'>>) => {
-     if (!playerId) return;
-    const habitDocRef = doc(db, 'players', playerId, 'habits', habitId);
+     if (!userId) return;
+    const habitDocRef = doc(db, 'players', userId, 'habits', habitId);
     try {
-      await updateDoc(habitDocRef, habitData);
+      await updateDoc(habitDocRef, habitData as any); // Using 'as any' for flexibility with Partial
       toast({ title: "Discipline Updated!", variant: 'default' });
     } catch (error) {
       console.error("Error updating habit:", error);
@@ -315,8 +292,8 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const completeHabit = async (habitId: string) => {
-    if (!playerId || !player) return;
-    const habitDocRef = doc(db, 'players', playerId, 'habits', habitId);
+    if (!userId || !player) return;
+    const habitDocRef = doc(db, 'players', userId, 'habits', habitId);
     
     try {
       const habitSnap = await getDoc(habitDocRef);
@@ -325,34 +302,33 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const habit = { id: habitSnap.id, ...habitSnap.data() } as Habit;
+      const habitData = habitSnap.data();
+      // Reconstruct habit with proper types for dates
+      const habit: Habit = {
+        id: habitSnap.id,
+        ...habitData,
+        createdAt: (habitData.createdAt as Timestamp).toDate().toISOString(),
+        lastCompletedDate: habitData.lastCompletedDate ? (habitData.lastCompletedDate as Timestamp).toDate().toISOString().split('T')[0] : undefined,
+      } as Habit;
+
       const today = new Date().toISOString().split('T')[0];
       
-      // Firestore Timestamps are converted to ISO strings when mapping data for `habits` state
-      // So `habit.lastCompletedDate` here would be an ISO date string part, or undefined.
       if (habit.frequency === 'Daily' && habit.lastCompletedDate === today) {
         toast({ title: "Already Done!", description: "You've already completed this daily habit today.", variant: "default"});
         return;
       }
 
-      const newStreak = (habit.type === 'Good' ? (habit.currentStreak || 0) + 1 : 0); // Reset streak for 'Bad' habits if completed (means avoided)
+      const newStreak = (habit.type === 'Good' ? (habit.currentStreak || 0) + 1 : 0);
       const newLongestStreak = Math.max(habit.longestStreak || 0, newStreak);
       
-      const updates: Partial<Habit> = {
-        currentStreak: newStreak,
-        longestStreak: newLongestStreak,
-        lastCompletedDate: Timestamp.fromDate(new Date()).toDate().toISOString().split('T')[0], // Store as date string part
-      };
-
       await updateDoc(habitDocRef, {
         currentStreak: newStreak,
         longestStreak: newLongestStreak,
-        lastCompletedDate: Timestamp.fromDate(new Date()), // Store as Timestamp
+        lastCompletedDate: Timestamp.fromDate(new Date()), 
       });
 
       if (habit.type === 'Good' && habit.targetStat) {
-        await updatePlayerStats(habit.targetStat, habit.statImprovementValue); // updatePlayerStats shows its own toast
-        // Toast for streak will be handled by updatePlayerStats or a separate one if no stat change
+        await updatePlayerStats(habit.targetStat, habit.statImprovementValue);
       } else {
          toast({ title: "Discipline Honed!", description: `Habit completed! Streak: ${newStreak}.`, variant: "default" });
       }
@@ -364,8 +340,8 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteHabit = async (habitId: string) => {
-    if (!playerId) return;
-    const habitDocRef = doc(db, 'players', playerId, 'habits', habitId);
+    if (!userId) return;
+    const habitDocRef = doc(db, 'players', userId, 'habits', habitId);
     try {
       await deleteDoc(habitDocRef);
       toast({ title: "Discipline Abandoned.", variant: 'destructive' });
@@ -375,13 +351,12 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-
   return (
     <LifeQuestContext.Provider value={{ 
       player, 
       tasks, 
       habits, 
-      isLoading, 
+      isLoading, // This is the LifeQuest data loading state
       addTask, 
       updateTask, 
       updateTaskStatus, 
