@@ -28,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans overflow-x-hidden`}>
         <AuthProvider> {/* Wrap with AuthProvider */}
           <LifeQuestProvider>
             {children}

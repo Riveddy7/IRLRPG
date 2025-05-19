@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState } from 'react';
 import { HabitCard } from '@/components/habits/habit-card';
@@ -79,7 +80,7 @@ export default function HabitsPage() {
       )}
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-lg bg-card">
+        <DialogContent className="sm:max-w-lg bg-card max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl p5-text-shadow">{editingHabit ? 'Refine Discipline' : 'Forge New Discipline'}</DialogTitle>
             <DialogDescription>
