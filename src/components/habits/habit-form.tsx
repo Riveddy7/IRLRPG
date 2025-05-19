@@ -20,12 +20,14 @@ import type { Habit, HabitType, HabitFrequency } from "@/types";
 import { HABIT_TYPE_OPTIONS, HABIT_FREQUENCY_OPTIONS } from "@/config/game-config";
 import { useLifeQuest } from "@/hooks/use-life-quest-store"; // Para obtener los stats del jugador
 
+const NONE_STAT_VALUE = "__NONE__"; // Special value for "Ninguno"
+
 const habitFormSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres.").max(100),
   description: z.string().max(500).optional(),
   type: z.enum(HABIT_TYPE_OPTIONS as [string, ...string[]]),
   frequency: z.enum(HABIT_FREQUENCY_OPTIONS as [string, ...string[]]),
-  targetStat: z.string().optional(), // Será el nombre del stat dinámico
+  targetStat: z.string().optional(), // Será el nombre del stat dinámico o NONE_STAT_VALUE
   statImprovementValue: z.coerce.number().min(0).max(10).default(1),
 });
 
@@ -49,13 +51,17 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Guard
       description: habit?.description || "",
       type: habit?.type || "Good",
       frequency: (Array.isArray(habit?.frequency) ? "Daily" : habit?.frequency) || "Daily",
-      targetStat: habit?.targetStat || undefined,
+      targetStat: habit?.targetStat || undefined, // Let Select show placeholder if undefined
       statImprovementValue: habit?.statImprovementValue || 1,
     },
   });
 
   function handleSubmit(data: HabitFormValues) {
-    onSubmit(data);
+    const processedData = {
+      ...data,
+      targetStat: data.targetStat === NONE_STAT_VALUE ? undefined : data.targetStat,
+    };
+    onSubmit(processedData);
   }
 
   return (
@@ -141,14 +147,19 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Guard
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Atributo Objetivo (Opcional)</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={availableStats.length === 0}>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value} // Default value for the Select itself
+                  value={field.value || undefined} // Control the Select's value to allow placeholder
+                  disabled={availableStats.length === 0}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={availableStats.length > 0 ? "Selecciona atributo" : "No hay atributos definidos"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Ninguno</SelectItem>
+                    <SelectItem value={NONE_STAT_VALUE}>Ninguno</SelectItem>
                     {availableStats.map(statKey => (
                       <SelectItem key={statKey} value={statKey}>{statKey}</SelectItem>
                     ))}
