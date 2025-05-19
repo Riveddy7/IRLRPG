@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form"; // No Controller needed if not using specific Controller features here
 import * as z from "zod";
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Label } from "@/components/ui/label"; // Import Label
 import { Loader2, Sparkles, AlertTriangle, UserCheck, BookOpen, Dices } from "lucide-react";
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
 import { useRouter } from 'next/navigation';
-import { generatePlayerStats, GeneratePlayerStatsOutput } from '@/ai/flows/generate-player-stats-flow';
+import { generatePlayerStats, type GeneratePlayerStatsInput, type GeneratePlayerStatsOutput } from '@/ai/flows/generate-player-stats-flow';
 import type { Player } from '@/types';
 
 const avatarOptions = [
@@ -75,7 +76,8 @@ export function QuizForm() {
     setAiError(null);
     setGeneratedAIData(null);
     try {
-      const result = await generatePlayerStats({ aspirations: improvementAreas });
+      const input: GeneratePlayerStatsInput = { aspirations: improvementAreas };
+      const result = await generatePlayerStats(input);
       setGeneratedAIData(result);
     } catch (error: any) {
       console.error("Error generando stats:", error);

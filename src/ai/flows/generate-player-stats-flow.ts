@@ -9,36 +9,40 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod'; // Import Zod directly
 
+// Define Schemas internally - DO NOT EXPORT THESE CONSTANTS
 const StatDetailSchema = z.object({
   name: z.string().describe('Nombre conciso del atributo (1-2 palabras).'),
   description: z.string().describe('Breve descripción del atributo (1 frase).'),
 });
 
-export const GeneratePlayerStatsInputSchema = z.object({
+const GeneratePlayerStatsInputSchema = z.object({
   aspirations: z
     .string()
     .describe(
       'Las áreas de la vida que el jugador considera importantes y quiere mejorar.'
     ),
 });
-export type GeneratePlayerStatsInput = z.infer<typeof GeneratePlayerStatsInputSchema>;
 
-export const GeneratePlayerStatsOutputSchema = z.object({
+const GeneratePlayerStatsOutputSchema = z.object({
   characterPreamble: z.string().describe('Una breve descripción del personaje en tono de videojuego, basada en sus aspiraciones y los stats generados.'),
   stats: z.array(StatDetailSchema).length(5).describe('Un array de exactamente 5 atributos generados.'),
 });
+
+// Export Types
+export type GeneratePlayerStatsInput = z.infer<typeof GeneratePlayerStatsInputSchema>;
 export type GeneratePlayerStatsOutput = z.infer<typeof GeneratePlayerStatsOutputSchema>;
 
+// Export Async Function
 export async function generatePlayerStats(input: GeneratePlayerStatsInput): Promise<GeneratePlayerStatsOutput> {
   return generatePlayerStatsFlow(input);
 }
 
 const prompt = ai.definePrompt({
   name: 'generatePlayerStatsPrompt',
-  input: { schema: GeneratePlayerStatsInputSchema },
-  output: { schema: GeneratePlayerStatsOutputSchema },
+  input: { schema: GeneratePlayerStatsInputSchema }, // Uses internal schema
+  output: { schema: GeneratePlayerStatsOutputSchema }, // Uses internal schema
   prompt: `Eres un Oráculo Ancestral en un RPG que ayuda a los nuevos aventureros a descubrir sus talentos innatos.
 Basado en las siguientes aspiraciones y áreas de mejora que el jugador ha compartido:
 "{{{aspirations}}}"
@@ -52,15 +56,15 @@ Por favor, haz lo siguiente:
 Asegúrate que los nombres de los atributos sean distintos entre sí.
 Devuelve la descripción del personaje y los 5 atributos.`,
   config: {
-    // temperature: 0.7, // Puedes ajustar la creatividad
+    // temperature: 0.7, 
   }
 });
 
 const generatePlayerStatsFlow = ai.defineFlow(
   {
     name: 'generatePlayerStatsFlow',
-    inputSchema: GeneratePlayerStatsInputSchema,
-    outputSchema: GeneratePlayerStatsOutputSchema,
+    inputSchema: GeneratePlayerStatsInputSchema, // Uses internal schema
+    outputSchema: GeneratePlayerStatsOutputSchema, // Uses internal schema
   },
   async (input) => {
     const { output } = await prompt(input);
