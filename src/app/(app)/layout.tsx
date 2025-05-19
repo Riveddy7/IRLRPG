@@ -3,8 +3,8 @@
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { useAuth } from '@/hooks/use-auth';
-import { useLifeQuest } from '@/hooks/use-life-quest-store'; // Necesitamos player para verificar el quiz
-import { useRouter } from 'next/navigation';
+import { useLifeQuest } from '@/hooks/use-life-quest-store';
+import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
 import React, { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
@@ -16,6 +16,7 @@ export default function AppLayout({
   const { user, isLoading: authLoading } = useAuth();
   const { player, isLoading: lifeQuestLoading } = useLifeQuest();
   const router = useRouter();
+  const pathname = usePathname(); // Get current pathname
 
   useEffect(() => {
     const totalLoading = authLoading || lifeQuestLoading;
@@ -23,23 +24,27 @@ export default function AppLayout({
     if (!totalLoading) { // Solo actuar cuando ambas cargas hayan terminado
       if (!user) {
         router.replace('/login');
-      } else if (user && player === null) {
-        // Esto puede pasar si el documento del jugador aún no se carga o no existe.
-        // Si createNewPlayerDocument de useAuth ya se ejecutó, player tendrá hasCompletedQuiz.
-        // Si player es null y user existe, podría ser un estado transitorio o un error.
-        // Podríamos esperar un poco o redirigir al quiz como fallback si hasCompletedQuiz no está disponible.
-        // Por ahora, si player es null pero user existe, y el quiz no se ha completado, se asume que debe ir al quiz.
-        // La lógica más robusta es: si player existe Y player.hasCompletedQuiz es false.
-        // Si el jugador no existe en Firestore pero sí en Auth, es un caso que createNewPlayerDocument debería haber manejado.
-        // Para ser más directos:
-      } else if (user && player && player.hasCompletedQuiz === false) {
-        router.replace('/quiz');
+      } else {
+        // User is logged in
+        if (player && player.hasCompletedQuiz === false) {
+          if (pathname !== '/quiz') { // Solo redirigir si no estamos ya en /quiz
+            router.replace('/quiz');
+          }
+        } else if (player && player.hasCompletedQuiz === true && pathname === '/quiz') {
+          // Si el quiz está completo y el usuario de alguna manera llega a /quiz, redirigir al dashboard
+          router.replace('/dashboard');
+        }
+        // Si player es null al principio (después de que authLoading y lifeQuestLoading sean false),
+        // es un estado transitorio. createNewPlayerDocument se habrá llamado desde useAuth.
+        // El onSnapshot en useLifeQuestStore actualizará el estado de `player`,
+        // y este useEffect se ejecutará de nuevo.
       }
-      // Si user existe, player existe y player.hasCompletedQuiz es true, se queda en la página actual (children)
     }
-  }, [user, player, authLoading, lifeQuestLoading, router]);
+  }, [user, player, authLoading, lifeQuestLoading, router, pathname]); // Añadido pathname a las dependencias
 
-  if (authLoading || lifeQuestLoading || !user) { // Muestra carga si auth o datos de lifequest están cargando, o si no hay usuario (antes de la redirección)
+  // Cargador principal mientras se autentica o se cargan los datos iniciales del jugador
+  // Evita mostrar este cargador en las propias páginas de autenticación si el usuario es momentáneamente nulo
+  if (authLoading || lifeQuestLoading || (!user && pathname !== '/login' && pathname !== '/register')) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -49,9 +54,11 @@ export default function AppLayout({
     );
   }
   
-  // Si el jugador existe pero no ha completado el quiz, y la redirección aún no ha ocurrido (useEffect tiene dependencias)
-  // podríamos mostrar un loader específico para "Redirigiendo al quiz"
-  if (player && player.hasCompletedQuiz === false) {
+  // Si el usuario está autenticado, los datos del jugador están cargados,
+  // el quiz no se ha completado, Y NO ESTAMOS YA EN LA PÁGINA DEL QUIZ,
+  // entonces muestra el cargador de "Preparando tu Iniciación..."
+  // Esto cubre el momento justo antes de que la redirección del useEffect surta efecto.
+  if (user && player && player.hasCompletedQuiz === false && pathname !== '/quiz') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
@@ -61,7 +68,10 @@ export default function AppLayout({
     );
   }
 
-
+  // Si todas las comprobaciones anteriores se superan (o no aplican), renderiza el layout principal con los children.
+  // Esto incluye:
+  // - Usuario autenticado, quiz completado -> renderiza la página solicitada (ej. dashboard)
+  // - Usuario autenticado, quiz no completado, PERO pathname YA ES '/quiz' -> renderiza QuizPage
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <AppHeader />
