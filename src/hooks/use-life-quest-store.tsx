@@ -5,6 +5,7 @@ import type { Player, PlayerStats, Task, Habit, TaskStatus, Difficulty, PlayerSk
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
   MAX_LEVEL as MAX_PLAYER_LEVEL,
+  getXPForLevel, // Added this for player de-leveling logic
   getLevelFromXP as getPlayerLevelFromXP,
   XP_PER_SKILL_LEVEL,
   MAX_SKILL_LEVEL,
@@ -80,7 +81,10 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       if (docSnap.exists()) {
         setPlayer(docSnap.data() as Player);
       } else {
-        setPlayer(null);
+        // This case should ideally be handled by the auth flow creating the player doc
+        // If it happens, it means the player doc wasn't created or was deleted.
+        console.warn(`Player document for UID ${userId} does not exist.`);
+        setPlayer(null); 
       }
     }, (error) => {
       console.error(`Error fetching player data for UID ${userId}:`, error);
@@ -118,7 +122,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
 
     const checkInitialLoad = async () => {
       try {
-        if (userId) await getDoc(playerDocRef);
+        if (userId) await getDoc(playerDocRef); // Check if player doc exists on initial load
       } catch (e) { /* Error already handled by onSnapshot */ }
       finally {
         if (!authIsLoading) setIsLoading(false);
@@ -141,19 +145,18 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     const playerDocRef = doc(db, 'players', userId);
-    // Initialize stats with level 5, xp 0 and coins to 0
-    const initialStats: PlayerStats = {};
-    if (quizData.stats) { // quizData.stats comes as { statName: 5 } initially
-        Object.keys(quizData.stats).forEach(statName => {
-            initialStats[statName] = { xp: 0, level: 5 };
-        });
-    }
+    
+    // quizData.stats should already be in the format { skillName: { xp: 0, level: 1 } }
+    // from quiz-form.tsx
+    const initialStats = quizData.stats || {}; 
 
     try {
       await updateDoc(playerDocRef, {
         ...quizData,
-        stats: initialStats, // Use the transformed stats
+        stats: initialStats, // Save the correctly structured stats
         coins: 0, // Initialize coins
+        xp: 0, // Player general XP starts at 0
+        level: 1, // Player general level starts at 1
         hasCompletedQuiz: true
       });
       toast({ title: "¡Perfil Actualizado!", description: "Tu aventura personalizada comienza ahora.", variant: "default" });
@@ -162,19 +165,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Error al Guardar", description: "No se pudieron guardar los datos del quiz.", variant: "destructive" });
     }
   };
-
-  const applyPlayerUpdates = useCallback(async (updates: Partial<Player>) => {
-    if (!userId) return;
-    const playerDocRef = doc(db, 'players', userId);
-    try {
-      await updateDoc(playerDocRef, updates);
-    } catch (error) {
-      console.error("Error actualizando jugador:", error);
-      toast({ title: "Error de Sincronización", description: "No se pudo actualizar el perfil del jugador.", variant: "destructive" });
-    }
-  }, [userId, toast]);
-
-
+  
   const addPlayerXPAndCoins = useCallback(async (xpAmount: number, coinAmount: number, targetStatName?: string, skillXpAmount?: number) => {
     if (!userId || !player) return;
 
@@ -183,60 +174,52 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
 
     let newPlayerXP = player.xp + xpAmount;
     let newPlayerLevel = player.level;
-    if (xpAmount > 0) { // Only check level up for positive XP
-        newPlayerLevel = getPlayerLevelFromXP(newPlayerXP);
-    } else { // Ensure XP doesn't go below 0 or current level's min XP
-        const currentLevelMinXp = getXPForLevel(player.level);
-        newPlayerXP = Math.max(currentLevelMinXp, newPlayerXP);
-    }
 
+    if (xpAmount > 0) { 
+        newPlayerLevel = getPlayerLevelFromXP(newPlayerXP);
+    } else { 
+        const currentLevelMinXp = getXPForLevel(player.level);
+        newPlayerXP = Math.max(currentLevelMinXp, newPlayerXP); 
+        newPlayerLevel = getPlayerLevelFromXP(newPlayerXP); // Recalculate level in case of de-level
+    }
 
     const playerUpdates: Partial<Player> = {
       xp: newPlayerXP,
-      coins: (player.coins || 0) + coinAmount,
+      coins: Math.max(0, (player.coins || 0) + coinAmount), // Coins cannot be negative
     };
 
     if (newPlayerLevel > player.level) {
       playerUpdates.level = newPlayerLevel;
       toast({ title: "¡SUBISTE DE NIVEL!", description: `¡Has alcanzado el Nivel ${newPlayerLevel}!`, variant: "default" });
-    } else if (newPlayerLevel < player.level && xpAmount < 0) {
-      // Logic for de-leveling if XP drops significantly (optional)
+    } else if (newPlayerLevel < player.level && player.level > 1) { // Prevent de-leveling below 1
       playerUpdates.level = newPlayerLevel;
        toast({ title: "Nivel Perdido", description: `Has bajado al Nivel ${newPlayerLevel}.`, variant: "destructive" });
     }
 
 
     // Skill XP and Level Update
-    if (targetStatName && skillXpAmount !== undefined && player.stats[targetStatName]) {
-      const currentSkill = player.stats[targetStatName];
-      let newSkillXP = currentSkill.xp + skillXpAmount;
-      let newSkillLevel = currentSkill.level;
+    if (targetStatName && skillXpAmount !== undefined && player.stats && player.stats[targetStatName]) {
+      const currentSkillData = player.stats[targetStatName];
+      let newTotalSkillXP = currentSkillData.xp + skillXpAmount;
+      
+      // Skill XP cannot go below 0.
+      newTotalSkillXP = Math.max(0, newTotalSkillXP);
 
-      if (skillXpAmount > 0) {
-        newSkillLevel = getSkillLevelFromXP(newSkillXP); // Recalculate based on total XP
-        // Adjust XP to be relative to the current level's start
-        const xpForCurrentSkillLevel = (newSkillLevel -1) * XP_PER_SKILL_LEVEL;
-        newSkillXP = newSkillXP - xpForCurrentSkillLevel;
-
-      } else { // Negative XP for skill
-        const minXpForCurrentSkillLevel = (currentSkill.level - 1) * XP_PER_SKILL_LEVEL;
-        newSkillXP = Math.max(0, newSkillXP); // Prevent skill XP from going below 0 relative to level 1
-        newSkillLevel = getSkillLevelFromXP(minXpForCurrentSkillLevel + newSkillXP); // Recalculate level based on total effective XP
-      }
+      const newSkillLevel = getSkillLevelFromXP(newTotalSkillXP);
       
       playerUpdates.stats = {
         ...player.stats,
-        [targetStatName]: { xp: newSkillXP, level: newSkillLevel },
+        [targetStatName]: { xp: newTotalSkillXP, level: newSkillLevel },
       };
 
-      if (newSkillLevel > currentSkill.level) {
+      if (newSkillLevel > currentSkillData.level) {
         toast({ title: `¡${targetStatName} Subió de Nivel!`, description: `Tu skill ${targetStatName} es ahora Nivel ${newSkillLevel}.`, variant: "default" });
-      } else if (newSkillLevel < currentSkill.level) {
+      } else if (newSkillLevel < currentSkillData.level && currentSkillData.level > 1) { // Prevent de-leveling skill below 1
          toast({ title: `¡${targetStatName} Bajó de Nivel!`, description: `Tu skill ${targetStatName} es ahora Nivel ${newSkillLevel}.`, variant: "destructive" });
       }
     }
     
-    batch.update(playerDocRef, playerUpdates as any);
+    batch.update(playerDocRef, playerUpdates as any); // Cast as any to avoid deep type issues with partial stats
 
     try {
       await batch.commit();
@@ -277,7 +260,8 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       if (taskData.dueDate) {
         updatePayload.dueDate = Timestamp.fromDate(new Date(taskData.dueDate));
       } else if (taskData.hasOwnProperty('dueDate') && taskData.dueDate === undefined) {
-        updatePayload.dueDate = null;
+        // If dueDate is explicitly set to undefined (e.g. cleared from form), store as null
+        updatePayload.dueDate = null; 
       }
       await updateDoc(taskDocRef, updatePayload);
       toast({ title: "¡Misión Actualizada!", variant: 'default' });
@@ -297,7 +281,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
 
         if (status === 'Done' && task.status !== 'Done') {
           const rewards = task.difficulty === 'Easy' ? TASK_REWARDS.EASY : TASK_REWARDS.HARD;
-          await addPlayerXPAndCoins(rewards.XP, rewards.COINS, task.targetStat, rewards.XP);
+          await addPlayerXPAndCoins(rewards.XP, rewards.COINS, task.targetStat, rewards.XP); // Pass rewards.XP also as skillXpAmount for tasks
           toast({ title: "¡Misión Completada!", description: `Ganaste ${rewards.XP} XP y ${rewards.COINS} monedas.` });
         } else {
           toast({ title: "Estado de Misión Actualizado", description: `Misión marcada como ${status}.` });
@@ -329,7 +313,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "No Autenticado", description: "Debes iniciar sesión.", variant: "destructive" });
       return;
     }
-    if (habitData.targetStat && !player.stats.hasOwnProperty(habitData.targetStat)) {
+    if (habitData.targetStat && player.stats && !player.stats.hasOwnProperty(habitData.targetStat)) {
       toast({ title: "Atributo Inválido", description: `El atributo "${habitData.targetStat}" no es válido.`, variant: "destructive" });
       return;
     }
@@ -340,6 +324,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
         currentStreak: 0,
         longestStreak: 0,
         createdAt: Timestamp.now(),
+        // lastCompletedDate will be undefined initially
       });
       toast({ title: "¡Disciplina Establecida!", description: `Disciplina "${habitData.title}" forjada.` });
     } catch (error) {
@@ -350,13 +335,13 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
 
   const updateHabit = async (habitId: string, habitData: Partial<Omit<Habit, 'id' | 'createdAt'>>) => {
     if (!userId || !player) return;
-    if (habitData.targetStat && !player.stats.hasOwnProperty(habitData.targetStat)) {
+    if (habitData.targetStat && player.stats && !player.stats.hasOwnProperty(habitData.targetStat)) {
       toast({ title: "Atributo Inválido", description: `El atributo "${habitData.targetStat}" no es válido.`, variant: "destructive" });
       return;
     }
     const habitDocRef = doc(db, 'players', userId, 'habits', habitId);
     try {
-      await updateDoc(habitDocRef, habitData as any);
+      await updateDoc(habitDocRef, habitData as any); // Cast as any to avoid deep type issues
       toast({ title: "¡Disciplina Actualizada!", variant: 'default' });
     } catch (error) {
       console.error("Error actualizando disciplina:", error);
@@ -384,13 +369,16 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
 
       let newStreak = habit.currentStreak || 0;
       let rewards;
+      let skillXpChange;
 
       if (habit.type === 'Good') {
         newStreak++;
         rewards = habit.difficulty === 'Easy' ? HABIT_REWARDS.GOOD.EASY : HABIT_REWARDS.GOOD.HARD;
+        skillXpChange = rewards.XP; // For good habits, skill XP is positive
       } else { // Bad habit "completed"
-        newStreak = 0; // Reset streak for bad habits or handle differently if needed
+        newStreak = 0; 
         rewards = habit.difficulty === 'Easy' ? HABIT_REWARDS.BAD.EASY : HABIT_REWARDS.BAD.HARD;
+        skillXpChange = rewards.XP; // For bad habits, skill XP is negative
       }
       
       const newLongestStreak = Math.max(habit.longestStreak || 0, newStreak);
@@ -401,10 +389,11 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
         lastCompletedDate: Timestamp.fromDate(new Date()),
       });
 
-      await addPlayerXPAndCoins(rewards.XP, rewards.COINS, habit.targetStat, rewards.XP);
+      // Player XP also changes by the same amount as skill XP for habits
+      await addPlayerXPAndCoins(rewards.XP, rewards.COINS, habit.targetStat, skillXpChange); 
       
       const xpAbs = Math.abs(rewards.XP);
-      const actionText = rewards.XP > 0 ? `Ganaste ${xpAbs} XP` : `Perdiste ${xpAbs} XP`;
+      const actionText = rewards.XP >= 0 ? `Ganaste ${xpAbs} XP` : `Perdiste ${xpAbs} XP`;
       toast({ title: `¡Disciplina ${habit.type === 'Good' ? 'Honrada' : 'Registrada'}!`, description: `${actionText}, ${rewards.COINS} monedas. Racha: ${newStreak}.` });
 
     } catch (error) {
@@ -444,3 +433,6 @@ export const useLifeQuest = () => {
   }
   return context;
 };
+
+
+    

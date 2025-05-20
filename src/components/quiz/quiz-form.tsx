@@ -25,7 +25,7 @@ import { Loader2, Sparkles, AlertTriangle, UserCheck, BookOpen, Dices } from "lu
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
 import { useRouter } from 'next/navigation';
 import { generatePlayerStats, type GeneratePlayerStatsInput, type GeneratePlayerStatsOutput } from '@/ai/flows/generate-player-stats-flow';
-import type { Player, PlayerStats as PlayerStatsType } from '@/types';
+import type { Player, PlayerStats as PlayerStatsType, PlayerSkill } from '@/types';
 
 const avatarOptions = [
   { key: 'avatar1', src: 'https://placehold.co/128x128.png?text=A1', alt: 'Avatar Option 1', dataAiHint: 'cool character' },
@@ -80,8 +80,10 @@ export function QuizForm() {
       const result = await generatePlayerStats(input);
       setGeneratedAIData(result);
     } catch (error: any) {
-      console.error("Error generando stats:", error);
-      setAiError(error.message || "El Oráculo está meditando... Intenta de nuevo en un momento.");
+      console.error("Error generando stats AI:", error);
+      const message = error.message || "El Oráculo está meditando o hubo un error al procesar tu petición. Intenta de nuevo en un momento.";
+      if (error.cause) console.error("Causa del error:", error.cause);
+      setAiError(message);
     } finally {
       setIsGeneratingStats(false);
     }
@@ -94,11 +96,11 @@ export function QuizForm() {
     }
     setIsSubmitting(true);
 
-    const newRawStats: { [key: string]: number } = {}; // Temporarily hold as { statName: 5 }
+    const initialPlayerStats: PlayerStatsType = {};
     const newStatDescriptions: { [key: string]: string } = {};
     
     generatedAIData.stats.forEach(stat => {
-      newRawStats[stat.name] = 5; // This will be converted to { xp: 0, level: 5 } in useLifeQuestStore
+      initialPlayerStats[stat.name] = { xp: 0, level: 1 }; // Nivel 1, XP 0 para cada skill
       newStatDescriptions[stat.name] = stat.description;
     });
 
@@ -111,7 +113,7 @@ export function QuizForm() {
       avatarUrl: selectedAvatar?.src || 'https://placehold.co/128x128.png',
       dataAiHint: selectedAvatar?.dataAiHint || 'avatar',
       improvementAreas: data.improvementAreas,
-      stats: newRawStats as any, // Pass as { statName: 5 }, store will convert to { xp, level }
+      stats: initialPlayerStats, 
       statDescriptions: newStatDescriptions,
       // hasCompletedQuiz will be set to true by updatePlayerProfileAfterQuiz
       // coins will be initialized to 0 by updatePlayerProfileAfterQuiz
@@ -244,7 +246,7 @@ export function QuizForm() {
                       </li>
                     ))}
                   </ul>
-                  <p className="text-xs text-muted-foreground text-center pt-2">Estos 5 atributos formarán el núcleo de tu ser. Cada uno comenzará en Nivel 5, XP 0.</p>
+                  <p className="text-xs text-muted-foreground text-center pt-2">Estos 5 atributos formarán el núcleo de tu ser. Cada uno comenzará en Nivel 1, XP 0.</p>
                 </CardContent>
               </Card>
             )}
@@ -260,3 +262,6 @@ export function QuizForm() {
     </Card>
   );
 }
+
+
+    
