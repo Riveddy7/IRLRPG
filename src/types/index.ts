@@ -1,39 +1,48 @@
 
+export interface PlayerSkill {
+  xp: number;
+  level: number;
+}
+
 export interface PlayerStats {
-  [key: string]: number; // Stats ahora son dinámicos
+  [key: string]: PlayerSkill; // Stats ahora tienen xp y level
 }
 
 export interface Player {
   id: string;
-  name: string; // Se establecerá en el quiz
-  avatarUrl: string; // Se establecerá en el quiz
+  name: string;
+  avatarUrl: string;
   dataAiHint?: string;
-  level: number;
-  xp: number;
-  stats: PlayerStats; // Stats dinámicos
+  level: number; // Nivel general del jugador
+  xp: number;    // XP general del jugador
+  coins: number; // Nueva moneda del juego
+  stats: PlayerStats; // Skills/atributos dinámicos del jugador
   age?: number;
-  genderAvatarKey?: string; // e.g., 'avatar1', 'avatar2'
-  improvementAreas?: string; // Texto del usuario
-  statDescriptions?: { [key: string]: string }; // Descripciones para los stats dinámicos
+  genderAvatarKey?: string;
+  improvementAreas?: string;
+  statDescriptions?: { [key: string]: string };
   hasCompletedQuiz: boolean;
 }
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Done';
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+export type Difficulty = 'Easy' | 'Hard';
 
 export interface Task {
   id: string;
   title: string;
   description?: string;
   status: TaskStatus;
-  dueDate?: string; // ISO string (from Firestore Timestamp)
+  dueDate?: string; // ISO string
   priority: TaskPriority;
-  xpReward: number;
-  createdAt: string; // ISO string (from Firestore Timestamp)
+  difficulty: Difficulty; // Nueva propiedad
+  targetStat?: string; // Skill vinculada (opcional para tareas)
+  // xpReward ya no se define aquí, se deriva de la dificultad
+  createdAt: string; // ISO string
 }
 
-export type HabitType = 'Good' | 'Bad'; // Good to build, Bad to break
-export type HabitFrequency = 'Daily' | 'Weekly' | string[]; // string[] for specific days e.g. ['Mon', 'Wed', 'Fri']
+export type HabitType = 'Good' | 'Bad';
+export type HabitFrequency = 'Daily' | 'Weekly' | string[];
 
 export interface Habit {
   id: string;
@@ -41,10 +50,11 @@ export interface Habit {
   description?: string;
   type: HabitType;
   frequency: HabitFrequency;
-  targetStat?: string; // Ahora será el nombre del stat dinámico
-  statImprovementValue: number;
+  targetStat?: string; // Skill vinculada (opcional, pero recomendado)
+  difficulty: Difficulty; // Nueva propiedad
+  // statImprovementValue se elimina
   currentStreak: number;
   longestStreak: number;
-  lastCompletedDate?: string; // ISO date string (YYYY-MM-DD) (from Firestore Timestamp)
-  createdAt: string; // ISO string (from Firestore Timestamp)
+  lastCompletedDate?: string; // ISO date string (YYYY-MM-DD)
+  createdAt: string; // ISO string
 }

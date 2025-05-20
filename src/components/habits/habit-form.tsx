@@ -16,26 +16,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Habit, HabitType, HabitFrequency } from "@/types";
-import { HABIT_TYPE_OPTIONS, HABIT_FREQUENCY_OPTIONS } from "@/config/game-config";
-import { useLifeQuest } from "@/hooks/use-life-quest-store"; // Para obtener los stats del jugador
+import type { Habit, HabitType, HabitFrequency, Difficulty } from "@/types"; // Added Difficulty
+import { HABIT_TYPE_OPTIONS, HABIT_FREQUENCY_OPTIONS, DIFFICULTY_OPTIONS } from "@/config/game-config"; // Added DIFFICULTY_OPTIONS
+import { useLifeQuest } from "@/hooks/use-life-quest-store";
 
-const NONE_STAT_VALUE = "__NONE__"; // Special value for "Ninguno"
+const NONE_STAT_VALUE = "__NONE__";
 
 const habitFormSchema = z.object({
   title: z.string().min(3, "El título debe tener al menos 3 caracteres.").max(100),
   description: z.string().max(500).optional(),
   type: z.enum(HABIT_TYPE_OPTIONS as [string, ...string[]]),
   frequency: z.enum(HABIT_FREQUENCY_OPTIONS as [string, ...string[]]),
-  targetStat: z.string().optional(), // Será el nombre del stat dinámico o NONE_STAT_VALUE
-  statImprovementValue: z.coerce.number().min(0).max(10).default(1),
+  difficulty: z.enum(DIFFICULTY_OPTIONS as [string, ...string[]]), // New field
+  targetStat: z.string().optional(),
+  // statImprovementValue is removed
 });
 
 type HabitFormValues = z.infer<typeof habitFormSchema>;
 
 interface HabitFormProps {
   habit?: Habit | null;
-  onSubmit: (data: HabitFormValues) => void;
+  onSubmit: (data: Omit<HabitFormValues, 'statImprovementValue'>) => void; // Ensure correct type for onSubmit
   onCancel: () => void;
   submitButtonText?: string;
 }
@@ -51,16 +52,16 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Guard
       description: habit?.description || "",
       type: habit?.type || "Good",
       frequency: (Array.isArray(habit?.frequency) ? "Daily" : habit?.frequency) || "Daily",
-      targetStat: habit?.targetStat || undefined, // Let Select show placeholder if undefined
-      statImprovementValue: habit?.statImprovementValue || 1,
+      difficulty: habit?.difficulty || "Easy", // Default difficulty
+      targetStat: habit?.targetStat || undefined,
     },
   });
 
   function handleSubmit(data: HabitFormValues) {
-    const processedData = {
-      ...data,
-      targetStat: data.targetStat === NONE_STAT_VALUE ? undefined : data.targetStat,
-    };
+    const { ...processedData } = data;
+    if (processedData.targetStat === NONE_STAT_VALUE) {
+      processedData.targetStat = undefined;
+    }
     onSubmit(processedData);
   }
 
@@ -143,19 +144,41 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Guard
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
+            name="difficulty"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Dificultad</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona dificultad" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {DIFFICULTY_OPTIONS.map(option => (
+                      <SelectItem key={option} value={option as Difficulty}>{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>Impacta el XP y monedas obtenidas/perdidas.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="targetStat"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Atributo Objetivo (Opcional)</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value} // Default value for the Select itself
-                  value={field.value || undefined} // Control the Select's value to allow placeholder
+                <FormLabel>Skill Objetivo (Opcional)</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || undefined}
                   disabled={availableStats.length === 0}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={availableStats.length > 0 ? "Selecciona atributo" : "No hay atributos definidos"} />
+                      <SelectValue placeholder={availableStats.length > 0 ? "Selecciona skill" : "No hay skills definidas"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -165,21 +188,7 @@ export function HabitForm({ habit, onSubmit, onCancel, submitButtonText = "Guard
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>Atributo que mejora esta disciplina.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="statImprovementValue"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Impulso de Atributo</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="Ej: 1" {...field} />
-                </FormControl>
-                <FormDescription>Puntos añadidos al completar.</FormDescription>
+                <FormDescription>Skill que mejora esta disciplina.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

@@ -1,6 +1,7 @@
 
-export const XP_PER_LEVEL_MILESTONES = [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000, 5000, 6500, 8000, 10000]; // XP needed to *reach* this level
-export const MAX_LEVEL = XP_PER_LEVEL_MILESTONES.length -1;
+// Configuración del Nivel del Jugador General
+export const XP_PER_LEVEL_MILESTONES = [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000, 5000, 6500, 8000, 10000];
+export const MAX_LEVEL = XP_PER_LEVEL_MILESTONES.length - 1;
 
 export const getXPForLevel = (level: number): number => {
   if (level <= 0) return 0;
@@ -28,10 +29,35 @@ export const getLevelFromXP = (xp: number): number => {
   return 0;
 };
 
-// STAT_NAMES y HABIT_TARGET_STAT_OPTIONS ya no son la fuente principal para el perfil del jugador,
-// ya que los stats son dinámicos. Se conservan por si alguna lógica futura los necesita
-// o para ofrecerlos como sugerencias si no hay stats de jugador aún.
-// Sin embargo, PlayerStats.tsx y HabitForm.tsx obtendrán los stats del perfil del jugador.
+// Configuración de Nivel de Skills
+export const XP_PER_SKILL_LEVEL = 100;
+export const MAX_SKILL_LEVEL = 99; // O el máximo que desees
+
+export const getSkillLevelFromXP = (xp: number): number => {
+  return Math.min(MAX_SKILL_LEVEL, Math.floor(xp / XP_PER_SKILL_LEVEL) + 1); // Asumiendo que nivel 1 es con 0-99 XP
+};
+
+// Recompensas y Penalizaciones
+export const DIFFICULTY_OPTIONS: Readonly<string[]> = ['Easy', 'Hard'];
+
+export const HABIT_REWARDS = {
+  GOOD: {
+    EASY: { XP: 5, COINS: 5 },
+    HARD: { XP: 10, COINS: 5 },
+  },
+  BAD: { // Penalizaciones al "completar" el mal hábito
+    EASY: { XP: -25, COINS: 5 }, // Nota: Fácil penaliza más que Difícil según solicitud
+    HARD: { XP: -15, COINS: 5 },
+  },
+};
+
+export const TASK_REWARDS = {
+  EASY: { XP: 5, COINS: 5 },
+  HARD: { XP: 10, COINS: 10 },
+};
+
+
+// STAT_NAMES ya no se usa como fuente principal, los stats son dinámicos
 export const STAT_NAMES: { [key: string]: string } = {
   power: "Poder",
   guts: "Agallas",
@@ -43,8 +69,4 @@ export const STAT_NAMES: { [key: string]: string } = {
 export const TASK_STATUS_OPTIONS: Readonly<string[]> = ['To Do', 'In Progress', 'Done'];
 export const TASK_PRIORITY_OPTIONS: Readonly<string[]> = ['Low', 'Medium', 'High', 'Critical'];
 export const HABIT_TYPE_OPTIONS: Readonly<string[]> = ['Good', 'Bad'];
-export const HABIT_FREQUENCY_OPTIONS: Readonly<string[]> = ['Daily', 'Weekly']; 
-// HABIT_TARGET_STAT_OPTIONS se llenará dinámicamente en el formulario de hábitos
-// a partir de los stats actuales del jugador. Mantenerlo aquí como fallback o referencia es opcional.
-// export const HABIT_TARGET_STAT_OPTIONS: Readonly<(keyof import('@/types').PlayerStats)[]> = ['power', 'guts', 'intel', 'charm', 'focus'];
-// En su lugar, en HabitForm, se usarán Object.keys(player.stats)
+export const HABIT_FREQUENCY_OPTIONS: Readonly<string[]> = ['Daily', 'Weekly'];

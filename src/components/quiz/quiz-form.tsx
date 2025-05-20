@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form"; // No Controller needed if not using specific Controller features here
+import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
@@ -20,12 +20,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label"; // Import Label
+import { Label } from "@/components/ui/label";
 import { Loader2, Sparkles, AlertTriangle, UserCheck, BookOpen, Dices } from "lucide-react";
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
 import { useRouter } from 'next/navigation';
 import { generatePlayerStats, type GeneratePlayerStatsInput, type GeneratePlayerStatsOutput } from '@/ai/flows/generate-player-stats-flow';
-import type { Player } from '@/types';
+import type { Player, PlayerStats as PlayerStatsType } from '@/types';
 
 const avatarOptions = [
   { key: 'avatar1', src: 'https://placehold.co/128x128.png?text=A1', alt: 'Avatar Option 1', dataAiHint: 'cool character' },
@@ -94,10 +94,11 @@ export function QuizForm() {
     }
     setIsSubmitting(true);
 
-    const newStats: { [key: string]: number } = {};
+    const newRawStats: { [key: string]: number } = {}; // Temporarily hold as { statName: 5 }
     const newStatDescriptions: { [key: string]: string } = {};
+    
     generatedAIData.stats.forEach(stat => {
-      newStats[stat.name] = 5; // Valor inicial para cada stat nuevo
+      newRawStats[stat.name] = 5; // This will be converted to { xp: 0, level: 5 } in useLifeQuestStore
       newStatDescriptions[stat.name] = stat.description;
     });
 
@@ -110,17 +111,18 @@ export function QuizForm() {
       avatarUrl: selectedAvatar?.src || 'https://placehold.co/128x128.png',
       dataAiHint: selectedAvatar?.dataAiHint || 'avatar',
       improvementAreas: data.improvementAreas,
-      stats: newStats,
+      stats: newRawStats as any, // Pass as { statName: 5 }, store will convert to { xp, level }
       statDescriptions: newStatDescriptions,
-      // hasCompletedQuiz se marcará como true dentro de updatePlayerProfileAfterQuiz
+      // hasCompletedQuiz will be set to true by updatePlayerProfileAfterQuiz
+      // coins will be initialized to 0 by updatePlayerProfileAfterQuiz
     };
     
     await updatePlayerProfileAfterQuiz(profileUpdate);
     setIsSubmitting(false);
-    router.push('/dashboard'); // La store ya mostró el toast
+    router.push('/dashboard'); 
   }
 
-  if (player === undefined) { // Auth aún cargando player
+  if (player === undefined) { 
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -128,7 +130,6 @@ export function QuizForm() {
       </div>
     );
   }
-
 
   return (
     <Card className="w-full max-w-2xl mx-auto bg-card/80 backdrop-blur-sm shadow-2xl border-primary/50">
@@ -243,7 +244,7 @@ export function QuizForm() {
                       </li>
                     ))}
                   </ul>
-                  <p className="text-xs text-muted-foreground text-center pt-2">Estos 5 atributos formarán el núcleo de tu ser. Cada uno comenzará en 5 puntos.</p>
+                  <p className="text-xs text-muted-foreground text-center pt-2">Estos 5 atributos formarán el núcleo de tu ser. Cada uno comenzará en Nivel 5, XP 0.</p>
                 </CardContent>
               </Card>
             )}
