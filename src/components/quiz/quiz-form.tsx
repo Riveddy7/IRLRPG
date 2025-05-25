@@ -29,7 +29,7 @@ import type { Player, PlayerStats as PlayerStatsType, PlayerSkill } from '@/type
 
 const avatarOptions = [
   { key: 'avatar1', src: 'https://placehold.co/128x128.png?text=A1', alt: 'Avatar Option 1', dataAiHint: 'cool character' },
-  { key: 'avatar2', src: 'https://placehold.co/128x128.png?text=A2', alt: 'Avatar Option 2', dataAiHint: 'fantasy hero' },
+  { key: 'avatar2', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/Whisk_storyboard7068df975e1e4e83a86c6aed.png?alt=media&token=64923987-e84f-47f8-b505-558283170450', alt: 'Avatar Option 2', dataAiHint: 'fantasy hero' },
 ];
 
 const quizFormSchema = z.object({
@@ -100,7 +100,7 @@ export function QuizForm() {
     const newStatDescriptions: { [key: string]: string } = {};
     
     generatedAIData.stats.forEach(stat => {
-      initialPlayerStats[stat.name] = { xp: 0, level: 1 }; // Nivel 1, XP 0 para cada skill
+      initialPlayerStats[stat.name] = { xp: 0, level: 1 }; 
       newStatDescriptions[stat.name] = stat.description;
     });
 
@@ -115,8 +115,6 @@ export function QuizForm() {
       improvementAreas: data.improvementAreas,
       stats: initialPlayerStats, 
       statDescriptions: newStatDescriptions,
-      // hasCompletedQuiz will be set to true by updatePlayerProfileAfterQuiz
-      // coins will be initialized to 0 by updatePlayerProfileAfterQuiz
     };
     
     await updatePlayerProfileAfterQuiz(profileUpdate);
@@ -262,6 +260,3 @@ export function QuizForm() {
     </Card>
   );
 }
-
-
-    
