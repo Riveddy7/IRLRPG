@@ -5,20 +5,20 @@ export interface PlayerSkill {
 }
 
 export interface PlayerStats {
-  [key: string]: PlayerSkill; // Stats ahora tienen xp y level
+  [key: string]: PlayerSkill; 
 }
 
 export interface Player {
   id: string;
   name: string;
-  avatarUrl: string;
-  dataAiHint?: string;
-  level: number; // Nivel general del jugador
-  xp: number;    // XP general del jugador
-  coins: number; // Nueva moneda del juego
-  stats: PlayerStats; // Skills/atributos dinámicos del jugador
+  // avatarUrl: string; // No longer stored directly
+  // dataAiHint?: string; // No longer stored directly
+  genderAvatarKey?: string; // Stores the key of the selected avatar
+  level: number; 
+  xp: number;    
+  coins: number; 
+  stats: PlayerStats; 
   age?: number;
-  genderAvatarKey?: string;
   improvementAreas?: string;
   statDescriptions?: { [key: string]: string };
   hasCompletedQuiz: boolean;
@@ -35,9 +35,8 @@ export interface Task {
   status: TaskStatus;
   dueDate?: string; // ISO string
   priority: TaskPriority;
-  difficulty: Difficulty; // Nueva propiedad
-  targetStat?: string; // Skill vinculada (opcional para tareas)
-  // xpReward ya no se define aquí, se deriva de la dificultad
+  difficulty: Difficulty; 
+  targetStat?: string; 
   createdAt: string; // ISO string
 }
 
@@ -50,9 +49,8 @@ export interface Habit {
   description?: string;
   type: HabitType;
   frequency: HabitFrequency;
-  targetStat?: string; // Skill vinculada (opcional, pero recomendado)
-  difficulty: Difficulty; // Nueva propiedad
-  // statImprovementValue se elimina
+  targetStat?: string; 
+  difficulty: Difficulty; 
   currentStreak: number;
   longestStreak: number;
   lastCompletedDate?: string; // ISO date string (YYYY-MM-DD)

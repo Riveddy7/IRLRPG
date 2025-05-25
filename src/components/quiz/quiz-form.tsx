@@ -25,12 +25,8 @@ import { Loader2, Sparkles, AlertTriangle, UserCheck, BookOpen, Dices } from "lu
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
 import { useRouter } from 'next/navigation';
 import { generatePlayerStats, type GeneratePlayerStatsInput, type GeneratePlayerStatsOutput } from '@/ai/flows/generate-player-stats-flow';
-import type { Player, PlayerStats as PlayerStatsType, PlayerSkill } from '@/types';
-
-const avatarOptions = [
-  { key: 'avatar1', src: 'https://placehold.co/128x128.png?text=A1', alt: 'Avatar Option 1', dataAiHint: 'cool character' },
-  { key: 'avatar2', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/Whisk_storyboard7068df975e1e4e83a86c6aed.png?alt=media&token=64923987-e84f-47f8-b505-558283170450', alt: 'Avatar Option 2', dataAiHint: 'fantasy hero' },
-];
+import type { Player, PlayerStats as PlayerStatsType } from '@/types';
+import { avatarOptions, getAvatarDetails } from '@/config/avatar-config'; // Import avatar configuration
 
 const quizFormSchema = z.object({
   nickname: z.string().min(3, "Tu nombre de héroe debe tener al menos 3 letras.").max(50, "Nombre demasiado largo."),
@@ -81,7 +77,12 @@ export function QuizForm() {
       setGeneratedAIData(result);
     } catch (error: any) {
       console.error("Error generando stats AI:", error);
-      const message = error.message || "El Oráculo está meditando o hubo un error al procesar tu petición. Intenta de nuevo en un momento.";
+      let message = "El Oráculo está meditando o hubo un error al procesar tu petición. Intenta de nuevo en un momento.";
+      if (error.message?.includes("format")) {
+        message = "La IA no pudo generar los atributos del jugador según el formato esperado. Revisa la consola para más detalles.";
+      } else if (error.message) {
+        message = error.message;
+      }
       if (error.cause) console.error("Causa del error:", error.cause);
       setAiError(message);
     } finally {
@@ -104,14 +105,10 @@ export function QuizForm() {
       newStatDescriptions[stat.name] = stat.description;
     });
 
-    const selectedAvatar = avatarOptions.find(opt => opt.key === data.genderAvatarKey);
-
     const profileUpdate: Partial<Player> = {
       name: data.nickname,
       age: data.age,
-      genderAvatarKey: data.genderAvatarKey,
-      avatarUrl: selectedAvatar?.src || 'https://placehold.co/128x128.png',
-      dataAiHint: selectedAvatar?.dataAiHint || 'avatar',
+      genderAvatarKey: data.genderAvatarKey, // Only store the key
       improvementAreas: data.improvementAreas,
       stats: initialPlayerStats, 
       statDescriptions: newStatDescriptions,

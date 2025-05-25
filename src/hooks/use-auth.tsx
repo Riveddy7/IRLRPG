@@ -11,14 +11,11 @@ import {
   signOut,
   UserCredential
 } from 'firebase/auth';
-import { doc, setDoc, Timestamp, writeBatch, collection, getDoc } from 'firebase/firestore';
-import type { Player, Task, Habit } from '@/types'; // Player ahora tiene hasCompletedQuiz
+import { doc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
+import type { Player } from '@/types'; 
 import { useToast } from './use-toast';
 import { useRouter } from 'next/navigation';
-
-// Default data for new users - Tareas y hábitos se crearán después del quiz o con valores muy genéricos
-// Por ahora, no crearemos tareas/hábitos por defecto aquí, ya que los stats se definen en el quiz.
-// Esto podría cambiar si queremos tareas genéricas que no dependan de stats.
+import { defaultAvatarKey } from '@/config/avatar-config'; // Import default avatar key
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -56,24 +53,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Perfil inicial mínimo. El resto se completa en el quiz.
     const newPlayerProfile: Player = {
       id: userId,
-      name: email?.split('@')[0] || 'Novato', // Placeholder, se cambiará en el quiz
-      avatarUrl: `https://placehold.co/128x128.png?text=${(email?.charAt(0) || 'N').toUpperCase()}`, // Placeholder
-      dataAiHint: 'avatar generico', // Placeholder
+      name: email?.split('@')[0] || 'Novato', 
+      genderAvatarKey: defaultAvatarKey, // Use default avatar key
       level: 1,
       xp: 0,
-      stats: {}, // Se llenará en el quiz
-      statDescriptions: {}, // Se llenará en el quiz
-      hasCompletedQuiz: false, // Clave para el flujo del quiz
+      coins: 0,
+      stats: {}, 
+      statDescriptions: {}, 
+      hasCompletedQuiz: false, 
     };
     
     try {
       await setDoc(playerDocRef, newPlayerProfile);
-      // No mostramos toast aquí, el flujo continuará al quiz.
-      // Las tareas y hábitos por defecto se podrían añadir después del quiz si es necesario,
-      // o el quiz mismo podría generar algunas tareas iniciales.
     } catch (e) {
       console.error("Error creating initial player document:", e);
       toast({ title: "Error de Configuración de Perfil", description: "No se pudo crear el perfil inicial del jugador.", variant: "destructive" });
@@ -89,8 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       await createNewPlayerDocument(userCredential.user.uid, userCredential.user.email);
       toast({ title: '¡Registro Exitoso!', description: 'Ahora personaliza tu aventura.' });
-      // router.push('/quiz'); // La redirección al quiz se manejará en AppLayout
-      router.push('/dashboard'); // Esto activará la lógica en AppLayout para ir al quiz si es necesario
+      router.push('/dashboard'); 
       return userCredential;
     } catch (e: any) {
       console.error("Registration error:", e);
@@ -107,7 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       toast({ title: '¡Login Exitoso!', description: '¡Bienvenido de vuelta!' });
-      // router.push('/dashboard'); // AppLayout manejará la redirección al quiz si es necesario
       router.push('/dashboard');
       return userCredential;
     } catch (e: any) {
