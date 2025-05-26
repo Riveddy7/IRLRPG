@@ -15,6 +15,7 @@ interface HabitButtonProps {
   isTodaySelected: boolean;
   onToggleComplete: (habitId: string) => void;
   onEdit: (habit: Habit) => void;
+  isActionDisabled?: boolean; // Added to visually or functionally disable the completion click
 }
 
 export function HabitButton({
@@ -23,11 +24,16 @@ export function HabitButton({
   isTodaySelected,
   onToggleComplete,
   onEdit,
+  isActionDisabled = false,
 }: HabitButtonProps) {
   
   const handleShortClick = () => {
-    if (isTodaySelected) {
+    // Only allow completion toggle for today AND if the action isn't disabled (e.g., already completed)
+    if (isTodaySelected && !isActionDisabled) {
       onToggleComplete(habit.id);
+    } else if (isTodaySelected && isActionDisabled && habit.type === 'Good') {
+      // Optionally, provide feedback that it's already done, though the store does this
+      // console.log("Habit already completed today.");
     }
   };
 
@@ -35,7 +41,9 @@ export function HabitButton({
     onEdit(habit);
   };
 
-  const longPressBindings = useLongPress(handleLongPress, handleShortClick, { delay: 500 });
+  // Disable click if isActionDisabled, but long press should still work
+  const clickHandler = isActionDisabled && isTodaySelected && habit.type === 'Good' ? undefined : handleShortClick;
+  const longPressBindings = useLongPress(handleLongPress, clickHandler, { delay: 500 });
 
   const Icon = habit.type === 'Good' ? TrendingUp : TrendingDown;
 
@@ -49,10 +57,11 @@ export function HabitButton({
         isCompletedOnSelectedDay && habit.type === 'Good' && 'bg-green-500/20 border-green-500 hover:bg-green-500/30 text-green-700 dark:text-green-300',
         isCompletedOnSelectedDay && habit.type === 'Bad' && 'bg-red-500/20 border-red-500 hover:bg-red-500/30 text-red-700 dark:text-red-300',
         !isCompletedOnSelectedDay && 'bg-card hover:bg-muted/50',
-        !isTodaySelected && 'opacity-70 cursor-not-allowed hover:bg-card',
+        // Visual cue if action is disabled (e.g., good habit completed today)
+        isActionDisabled && isTodaySelected && habit.type === 'Good' && 'opacity-60 cursor-not-allowed hover:bg-green-500/20', 
+        !isTodaySelected && 'opacity-70 cursor-not-allowed hover:bg-card', // For non-today dates
       )}
-      aria-label={`${habit.title}. ${isCompletedOnSelectedDay ? 'Completado' : 'Pendiente'}. ${isTodaySelected ? 'Pulsar para marcar, mantener para editar.' : 'Mantener para editar.'}`}
-      // Tooltip could be added here for more info on long press
+      aria-label={`${habit.title}. ${isCompletedOnSelectedDay ? 'Completado' : 'Pendiente'}. ${isTodaySelected ? (isActionDisabled && habit.type === 'Good' ? 'Ya completado hoy. Mantener para editar.' : 'Pulsar para marcar, mantener para editar.') : 'Mantener para editar.'}`}
     >
       <div className="flex items-center">
         <Icon className={cn(
@@ -74,16 +83,15 @@ export function HabitButton({
                 <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
             )
         ) : (
-          isTodaySelected && (
+          isTodaySelected && ( // Only show pending circle for today
             <div className="h-5 w-5 sm:h-6 sm:w-6 border-2 border-dashed border-muted-foreground/50 rounded-full" />
           )
         )}
-        {!isTodaySelected && !isCompletedOnSelectedDay && (
+        {!isTodaySelected && !isCompletedOnSelectedDay && ( // For past days, if not completed, show a dimmer circle or nothing
            <div className="h-5 w-5 sm:h-6 sm:w-6 border-2 border-muted-foreground/30 rounded-full" />
         )}
-         {/* Edit icon hint, could be conditional based on long press capability */}
-         {/* <Edit3 className="h-4 w-4 text-muted-foreground/50 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"/> */}
       </div>
     </Button>
   );
 }
+

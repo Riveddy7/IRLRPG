@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { HabitButton } from '@/components/habits/habit-button';
 import { HabitForm } from '@/components/habits/habit-form';
 import { DaySelectorStrip } from '@/components/habits/day-selector-strip';
@@ -11,13 +11,20 @@ import { useLifeQuest } from '@/hooks/use-life-quest-store';
 import type { Habit } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, isToday, isEqual } from 'date-fns';
+import { format, isToday, isEqual, startOfDay } from 'date-fns';
 
 export default function HabitsPage() {
   const { player, habits, completeHabit, addHabit, updateHabit, isLoading } = useLifeQuest();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(startOfDay(new Date())); // Default to today
+
+  useEffect(() => {
+    // Ensure selectedDate doesn't go into the future if somehow set externally
+    if (selectedDate > startOfDay(new Date())) {
+      setSelectedDate(startOfDay(new Date()));
+    }
+  }, [selectedDate]);
 
   const handleOpenForm = (habit: Habit | null = null) => {
     setEditingHabit(habit);
@@ -39,9 +46,8 @@ export default function HabitsPage() {
   };
 
   const handleToggleComplete = (habitId: string) => {
-    if (isToday(selectedDate)) { // Only allow completion toggle for today
-      completeHabit(habitId);
-    }
+    // The store's completeHabit function already checks if it's today and if it's already completed.
+    completeHabit(habitId);
   };
   
   const isTodaySelected = isToday(selectedDate);
@@ -52,7 +58,7 @@ export default function HabitsPage() {
   const goodHabitsCompletedToday = useMemo(() => {
     const todayString = format(new Date(), 'yyyy-MM-dd');
     return goodHabits.filter(h => h.lastCompletedDate === todayString).length;
-  }, [goodHabits, habits]); // Re-calculate if habits array changes (due to completion)
+  }, [goodHabits, habits]);
 
   const progressPercentage = goodHabits.length > 0 ? (goodHabitsCompletedToday / goodHabits.length) * 100 : 0;
   
@@ -108,6 +114,10 @@ export default function HabitsPage() {
         <div className="space-y-3">
           {sortedHabits.map((habit) => {
             const isCompletedOnSelectedDay = habit.lastCompletedDate === selectedDateString;
+            // Check if the habit (if good, daily) was already completed today, to potentially disable further clicks
+            // This logic is already handled by the store, but good for UI cues if needed
+            const isGoodHabitCompletedToday = habit.type === 'Good' && habit.frequency === 'Daily' && habit.lastCompletedDate === format(new Date(), 'yyyy-MM-dd');
+
             return (
               <HabitButton
                 key={habit.id}
@@ -116,6 +126,7 @@ export default function HabitsPage() {
                 isTodaySelected={isTodaySelected}
                 onToggleComplete={handleToggleComplete}
                 onEdit={handleOpenForm}
+                isActionDisabled={isGoodHabitCompletedToday && isTodaySelected && habit.type === 'Good'} // Pass this to potentially disable click
               />
             );
           })}
@@ -161,3 +172,4 @@ export default function HabitsPage() {
     </div>
   );
 }
+
