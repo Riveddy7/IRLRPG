@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,7 +84,7 @@ body {
     --input: 234 30% 18%; /* Input Background */
     --ring: 56 100% 50%; /* Yellow for focus rings in dark mode for pop */
 
-    --radius: 0.3rem; /* Sharper corners */
+    --radius: 0.5rem; /* Increased from 0.3rem for rounder corners */
 
     --chart-1: 1 79% 56%; /* Red */
     --chart-2: 56 100% 50%; /* Yellow */
@@ -124,7 +125,7 @@ body {
 }
 
 .p5-panel-header {
-  @apply bg-primary text-primary-foreground p-3 rounded-t-sm uppercase font-bold tracking-wider;
+  @apply bg-primary text-primary-foreground p-3 rounded-t-lg uppercase font-bold tracking-wider;
   /* clip-path: polygon(0 0, 100% 0, 100% 80%, 95% 100%, 0 100%); */
 }
 
@@ -155,4 +156,25 @@ body {
 
 .p5-stat-value {
   @apply font-mono text-2xl font-bold text-accent;
+}
+
+.p5-stat-label-radar {
+  @apply fill-muted-foreground text-xs;
+}
+.p5-radar-chart-container {
+  @apply bg-card/80 backdrop-blur-sm p-4 rounded-lg shadow-xl border-secondary/30;
+}
+
+/* Full body avatar animation */
+@keyframes idle-bob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-idle-bob {
+  animation: idle-bob 3s ease-in-out infinite;
 }
