@@ -8,7 +8,7 @@ export interface AvatarOption {
 
 export const avatarOptions: AvatarOption[] = [
   { key: 'avatar1', src: 'https://placehold.co/128x128.png?text=Hero1', alt: 'Avatar Épico', dataAiHint: 'epic hero' },
-  { key: 'avatar2', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/Whisk_storyboard7068df975e1e4e83a86c6aed.png?alt=media&token=64923987-e84f-47f8-b505-558283170450', alt: 'Héroe Fantástico', dataAiHint: 'fantasy hero' },
+  { key: 'avatar2', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/Whisk_storyboard7255ac5009a5468994c27a3f-removebg-preview.png?alt=media&token=615ba162-11af-4fa5-810b-d1e0392ccfb3', alt: 'Héroe Fantástico', dataAiHint: 'fantasy hero' },
   { key: 'avatar3', src: 'https://placehold.co/128x128.png?text=Hero3', alt: 'Aventurero Misterioso', dataAiHint: 'mystery adventurer' },
 ];
 
