@@ -4,9 +4,8 @@
 import React from 'react';
 import type { Habit } from '@/types';
 import { Button } from '@/components/ui/button';
-import { cn }
-from '@/lib/utils';
-import { useLongPress, type LongPressOptions } from '@/hooks/use-long-press';
+import { cn } from '@/lib/utils';
+import { useLongPress } from '@/hooks/use-long-press'; // Assuming useLongPress is correctly set up
 import { CheckCircle, XCircle, Edit3, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface HabitButtonProps {
@@ -15,7 +14,7 @@ interface HabitButtonProps {
   isTodaySelected: boolean;
   onToggleComplete: (habitId: string) => void;
   onEdit: (habit: Habit) => void;
-  isActionDisabled?: boolean; // Added to visually or functionally disable the completion click
+  isActionDisabled?: boolean; // True if good, daily habit already completed today
 }
 
 export function HabitButton({
@@ -28,12 +27,13 @@ export function HabitButton({
 }: HabitButtonProps) {
   
   const handleShortClick = () => {
-    // Only allow completion toggle for today AND if the action isn't disabled (e.g., already completed)
+    // Only allow completion toggle for today AND if the action isn't disabled
     if (isTodaySelected && !isActionDisabled) {
       onToggleComplete(habit.id);
-    } else if (isTodaySelected && isActionDisabled && habit.type === 'Good') {
-      // Optionally, provide feedback that it's already done, though the store does this
-      // console.log("Habit already completed today.");
+    }
+    // If it's a bad habit, it can always be "completed" (registered) for today
+    else if (isTodaySelected && habit.type === 'Bad') {
+      onToggleComplete(habit.id);
     }
   };
 
@@ -41,8 +41,13 @@ export function HabitButton({
     onEdit(habit);
   };
 
-  // Disable click if isActionDisabled, but long press should still work
-  const clickHandler = isActionDisabled && isTodaySelected && habit.type === 'Good' ? undefined : handleShortClick;
+  // Disable click if action is disabled (good habit completed today)
+  // but allow for bad habits to be registered.
+  const canPerformShortClick = 
+    (isTodaySelected && habit.type === 'Bad') || 
+    (isTodaySelected && habit.type === 'Good' && !isActionDisabled);
+
+  const clickHandler = canPerformShortClick ? handleShortClick : undefined;
   const longPressBindings = useLongPress(handleLongPress, clickHandler, { delay: 500 });
 
   const Icon = habit.type === 'Good' ? TrendingUp : TrendingDown;
@@ -59,9 +64,16 @@ export function HabitButton({
         !isCompletedOnSelectedDay && 'bg-card hover:bg-muted/50',
         // Visual cue if action is disabled (e.g., good habit completed today)
         isActionDisabled && isTodaySelected && habit.type === 'Good' && 'opacity-60 cursor-not-allowed hover:bg-green-500/20', 
-        !isTodaySelected && 'opacity-70 cursor-not-allowed hover:bg-card', // For non-today dates
+        !isTodaySelected && 'opacity-70 cursor-default hover:bg-card', // For non-today dates, no click action, just visual
       )}
-      aria-label={`${habit.title}. ${isCompletedOnSelectedDay ? 'Completado' : 'Pendiente'}. ${isTodaySelected ? (isActionDisabled && habit.type === 'Good' ? 'Ya completado hoy. Mantener para editar.' : 'Pulsar para marcar, mantener para editar.') : 'Mantener para editar.'}`}
+      aria-label={`${habit.title}. ${isCompletedOnSelectedDay ? 'Completado' : 'Pendiente'}. ${
+        isTodaySelected 
+          ? (isActionDisabled && habit.type === 'Good' ? 'Ya completado hoy. Mantener para editar.' : 'Pulsar para marcar, mantener para editar.') 
+          : 'Ver estado. Mantener para editar.'
+      }`}
+      // Prevent click events on non-today dates, except for long press (handled by useLongPress)
+      onClickCapture={!isTodaySelected ? (e) => e.stopPropagation() : undefined}
+
     >
       <div className="flex items-center">
         <Icon className={cn(
@@ -79,19 +91,24 @@ export function HabitButton({
         {isCompletedOnSelectedDay ? (
             habit.type === 'Good' ? (
                 <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
-            ) : (
+            ) : ( // Bad habit completed (i.e., registered)
                 <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
             )
         ) : (
-          isTodaySelected && ( // Only show pending circle for today
+          // Show pending circle only if it's today and action is not disabled (or if it's a bad habit)
+          isTodaySelected && ( (!isActionDisabled && habit.type === 'Good') || habit.type === 'Bad' ) && (
             <div className="h-5 w-5 sm:h-6 sm:w-6 border-2 border-dashed border-muted-foreground/50 rounded-full" />
           )
         )}
-        {!isTodaySelected && !isCompletedOnSelectedDay && ( // For past days, if not completed, show a dimmer circle or nothing
+        {/* For past days, if not completed, show a dimmer circle or nothing */}
+        {!isTodaySelected && !isCompletedOnSelectedDay && ( 
            <div className="h-5 w-5 sm:h-6 sm:w-6 border-2 border-muted-foreground/30 rounded-full" />
         )}
+        {/* If good habit completed today, show checkmark even if not selected day */}
+         {isActionDisabled && habit.type === 'Good' && isTodaySelected && !isCompletedOnSelectedDay && (
+             <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 opacity-60" />
+         )}
       </div>
     </Button>
   );
 }
-
