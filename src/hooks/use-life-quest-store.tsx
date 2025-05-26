@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Player, PlayerStats, Task, Habit, TaskStatus, Difficulty, PlayerSkill } from '@/types';
+import type { Player, PlayerStats, Task, Habit, TaskStatus, Difficulty, PlayerSkill, RewardItem } from '@/types';
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
   MAX_LEVEL as MAX_PLAYER_LEVEL,
@@ -27,6 +27,7 @@ import {
   onSnapshot,
   Timestamp,
   writeBatch,
+  orderBy,
 } from 'firebase/firestore';
 import { useAuth } from './use-auth';
 import { format, startOfDay } from 'date-fns';
@@ -35,6 +36,7 @@ interface LifeQuestContextType {
   player: Player | null;
   tasks: Task[];
   habits: Habit[];
+  rewards: RewardItem[];
   isLoading: boolean;
   addTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'status'>) => Promise<void>;
   updateTask: (taskId: string, taskData: Partial<Omit<Task, 'id' | 'createdAt'>>) => Promise<void>;
@@ -45,6 +47,10 @@ interface LifeQuestContextType {
   completeHabit: (habitId: string) => Promise<void>;
   deleteHabit: (habitId: string) => Promise<void>;
   updatePlayerProfileAfterQuiz: (quizData: Partial<Player>) => Promise<void>;
+  addReward: (rewardData: Omit<RewardItem, 'id' | 'createdAt'>) => Promise<void>;
+  updateReward: (rewardId: string, rewardData: Partial<Omit<RewardItem, 'id' | 'createdAt'>>) => Promise<void>;
+  deleteReward: (rewardId: string) => Promise<void>;
+  purchaseReward: (rewardId: string) => Promise<void>;
 }
 
 const LifeQuestContext = createContext<LifeQuestContextType | undefined>(undefined);
@@ -54,6 +60,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
   const [player, setPlayer] = useState<Player | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -69,6 +76,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       setPlayer(null);
       setTasks([]);
       setHabits([]);
+      setRewards([]);
       setIsLoading(false);
       return;
     }
@@ -89,7 +97,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       setPlayer(null);
     });
 
-    const tasksQuery = query(collection(db, 'players', userId, 'tasks'));
+    const tasksQuery = query(collection(db, 'players', userId, 'tasks'), orderBy('createdAt', 'desc'));
     const unsubscribeTasks = onSnapshot(tasksQuery, (querySnapshot) => {
       const tasksData = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -100,28 +108,25 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
           dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate().toISOString() : undefined,
         } as Task;
       });
-      setTasks(tasksData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setTasks(tasksData);
     }, (error) => console.error(`Error fetching tasks for UID ${userId}:`, error));
 
-    const habitsQuery = query(collection(db, 'players', userId, 'habits'));
+    const habitsQuery = query(collection(db, 'players', userId, 'habits'), orderBy('createdAt', 'desc'));
     const unsubscribeHabits = onSnapshot(habitsQuery, (querySnapshot) => {
       const habitsData = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        // Ensure lastCompletedDate is correctly formatted as YYYY-MM-DD string or undefined
         let lastCompletedDateStr: string | undefined = undefined;
         if (data.lastCompletedDate) {
           if (data.lastCompletedDate instanceof Timestamp) {
             lastCompletedDateStr = format(data.lastCompletedDate.toDate(), 'yyyy-MM-dd');
           } else if (typeof data.lastCompletedDate === 'string') {
-            // If it's already a string, try to parse and reformat to ensure consistency, or use as is if valid
             try {
               lastCompletedDateStr = format(new Date(data.lastCompletedDate), 'yyyy-MM-dd');
             } catch (e) {
-              // If parsing fails, and it looks like YYYY-MM-DD, use it. Otherwise, problematic.
               if (/^\d{4}-\d{2}-\d{2}$/.test(data.lastCompletedDate)) {
                  lastCompletedDateStr = data.lastCompletedDate;
               } else {
-                console.warn("Invalid lastCompletedDate string format:", data.lastCompletedDate);
+                console.warn("Invalid lastCompletedDate string format in habit:", data.lastCompletedDate);
               }
             }
           }
@@ -133,8 +138,22 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
           lastCompletedDate: lastCompletedDateStr,
         } as Habit;
       });
-      setHabits(habitsData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setHabits(habitsData);
     }, (error) => console.error(`Error fetching habits for UID ${userId}:`, error));
+
+    const rewardsQuery = query(collection(db, 'players', userId, 'rewards'), orderBy('createdAt', 'desc'));
+    const unsubscribeRewards = onSnapshot(rewardsQuery, (querySnapshot) => {
+      const rewardsData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: (data.createdAt as Timestamp)?.toDate().toISOString(),
+        } as RewardItem;
+      });
+      setRewards(rewardsData);
+    }, (error) => console.error(`Error fetching rewards for UID ${userId}:`, error));
+
 
     const checkInitialLoad = async () => {
       try {
@@ -150,6 +169,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       unsubscribePlayer();
       unsubscribeTasks();
       unsubscribeHabits();
+      unsubscribeRewards();
     };
   }, [userId, authIsLoading, toast]);
 
@@ -163,16 +183,17 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
     const initialStats: PlayerStats = {};
     if (quizData.stats) {
       for (const statName in quizData.stats) {
+        // Ensure stats are initialized with xp:0, level:1 structure
         initialStats[statName] = { xp: 0, level: 1 };
       }
     }
 
     const profileToUpdate: Partial<Player> = {
       ...quizData,
-      stats: initialStats, // Ensure stats are initialized with xp and level
-      xp: 0,
-      level: 1,
-      coins: 0,
+      stats: initialStats,
+      xp: 0, // Player general XP
+      level: 1, // Player general level
+      coins: 0, // Player initial coins
       hasCompletedQuiz: true
     };
 
@@ -191,24 +212,18 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
     const batch = writeBatch(db);
     const playerDocRef = doc(db, 'players', userId);
 
-    // Fetch the latest player data directly from Firestore within the transaction/batch context if possible
-    // For simplicity here, we use the current state `player`, assuming it's reasonably up-to-date
-    // or that Firestore rules/security handle concurrency if critical.
-    // A more robust solution for critical ops might involve Firestore Transactions.
-
     let newPlayerXP = player.xp + xpAmount;
     let newPlayerLevel = player.level;
 
     if (xpAmount > 0) {
         newPlayerLevel = getPlayerLevelFromXP(newPlayerXP);
     } else {
-        // Prevent XP from dropping below the minimum for the current level, unless leveling down
         const currentLevelMinXp = getXPForLevel(player.level);
-        newPlayerXP = Math.max(currentLevelMinXp, newPlayerXP); // Don't drop XP below current level's min
-        newPlayerLevel = getPlayerLevelFromXP(newPlayerXP); // Recalculate level
+        newPlayerXP = Math.max(currentLevelMinXp, newPlayerXP);
+        newPlayerLevel = getPlayerLevelFromXP(newPlayerXP);
     }
-    newPlayerLevel = Math.max(1, newPlayerLevel); // Ensure player level doesn't go below 1
-    newPlayerXP = Math.max(0, newPlayerXP); // Ensure player XP doesn't go below 0
+    newPlayerLevel = Math.max(1, newPlayerLevel);
+    newPlayerXP = Math.max(0, newPlayerXP);
 
 
     const playerUpdates: Partial<Player> = {
@@ -216,32 +231,35 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       coins: Math.max(0, (player.coins || 0) + coinAmount),
     };
 
-    if (newPlayerLevel > player.level) {
+    if (newPlayerLevel !== player.level) {
       playerUpdates.level = newPlayerLevel;
-      toast({ title: "¡SUBISTE DE NIVEL!", description: `¡Has alcanzado el Nivel ${newPlayerLevel}!`, variant: "default" });
-    } else if (newPlayerLevel < player.level && player.level > 1) {
-      playerUpdates.level = newPlayerLevel;
-       toast({ title: "Nivel Perdido", description: `Has bajado al Nivel ${newPlayerLevel}.`, variant: "destructive" });
+      if (newPlayerLevel > player.level) {
+        toast({ title: "¡SUBISTE DE NIVEL!", description: `¡Has alcanzado el Nivel ${newPlayerLevel}!`, variant: "default" });
+      } else if (newPlayerLevel < player.level) {
+         toast({ title: "Nivel Perdido", description: `Has bajado al Nivel ${newPlayerLevel}.`, variant: "destructive" });
+      }
     }
 
 
     if (targetStatName && skillXpAmount !== undefined && player.stats && player.stats[targetStatName]) {
       const currentSkillData = player.stats[targetStatName];
       let newTotalSkillXP = currentSkillData.xp + skillXpAmount;
-      newTotalSkillXP = Math.max(0, newTotalSkillXP); // Ensure skill XP doesn't go below 0
+      newTotalSkillXP = Math.max(0, newTotalSkillXP);
 
       let newSkillLevel = getSkillLevelFromXP(newTotalSkillXP);
-      newSkillLevel = Math.max(1, newSkillLevel); // Ensure skill level doesn't go below 1
+      newSkillLevel = Math.max(1, newSkillLevel);
 
       playerUpdates.stats = {
         ...player.stats,
         [targetStatName]: { xp: newTotalSkillXP, level: newSkillLevel },
       };
 
-      if (newSkillLevel > currentSkillData.level) {
-        toast({ title: `¡${targetStatName} Subió de Nivel!`, description: `Tu skill ${targetStatName} es ahora Nivel ${newSkillLevel}.`, variant: "default" });
-      } else if (newSkillLevel < currentSkillData.level && currentSkillData.level > 1) {
-         toast({ title: `¡${targetStatName} Bajó de Nivel!`, description: `Tu skill ${targetStatName} es ahora Nivel ${newSkillLevel}.`, variant: "destructive" });
+      if (newSkillLevel !== currentSkillData.level) {
+        if (newSkillLevel > currentSkillData.level) {
+          toast({ title: `¡${targetStatName} Subió de Nivel!`, description: `Tu skill ${targetStatName} es ahora Nivel ${newSkillLevel}.`, variant: "default" });
+        } else if (newSkillLevel < currentSkillData.level) {
+           toast({ title: `¡${targetStatName} Bajó de Nivel!`, description: `Tu skill ${targetStatName} es ahora Nivel ${newSkillLevel}.`, variant: "destructive" });
+        }
       }
     }
 
@@ -284,7 +302,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       if (taskData.dueDate) {
         updatePayload.dueDate = Timestamp.fromDate(new Date(taskData.dueDate));
       } else if (taskData.hasOwnProperty('dueDate') && taskData.dueDate === undefined) {
-        updatePayload.dueDate = null;
+        updatePayload.dueDate = null; // Explicitly set to null if dueDate is undefined
       }
       await updateDoc(taskDocRef, updatePayload);
       toast({ title: "¡Misión Actualizada!", variant: 'default' });
@@ -346,7 +364,6 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
         currentStreak: 0,
         longestStreak: 0,
         createdAt: Timestamp.now(),
-        // lastCompletedDate is initially undefined
       });
       toast({ title: "¡Disciplina Establecida!", description: `Disciplina "${habitData.title}" forjada.` });
     } catch (error) {
@@ -376,14 +393,12 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
     const habitDocRef = doc(db, 'players', userId, 'habits', habitId);
 
     try {
-      // Get the most recent habit data directly from Firestore
       const habitSnap = await getDoc(habitDocRef);
       if (!habitSnap.exists()) {
         toast({ title: "Error", description: "Disciplina no encontrada.", variant: "destructive" });
         return;
       }
 
-      // Convert Firestore data to Habit type, ensuring lastCompletedDate is a YYYY-MM-DD string
       const firestoreData = habitSnap.data();
       let lastCompletedDateStr: string | undefined = undefined;
       if (firestoreData.lastCompletedDate) {
@@ -400,12 +415,11 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
           lastCompletedDate: lastCompletedDateStr,
       } as Habit;
 
-
       const todayString = format(startOfDay(new Date()), 'yyyy-MM-dd');
 
       if (habit.type === 'Good' && habit.frequency === 'Daily' && habit.lastCompletedDate === todayString) {
         toast({ title: "¡Ya Cumpliste!", description: "Ya completaste esta disciplina diaria hoy." });
-        return; // Already completed today
+        return;
       }
 
       let newStreak = habit.currentStreak || 0;
@@ -416,21 +430,18 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
         newStreak++;
         rewards = habit.difficulty === 'Easy' ? HABIT_REWARDS.GOOD.EASY : HABIT_REWARDS.GOOD.HARD;
         skillXpChange = rewards.XP;
-      } else { // Bad habit
-        newStreak = 0; // Reset streak for bad habits when they occur
+      } else {
+        newStreak = 0;
         rewards = habit.difficulty === 'Easy' ? HABIT_REWARDS.BAD.EASY : HABIT_REWARDS.BAD.HARD;
         skillXpChange = rewards.XP;
       }
 
       const newLongestStreak = Math.max(habit.longestStreak || 0, newStreak);
 
-      // Update Firestore
-      // We use setDoc here to ensure lastCompletedDate is explicitly set or removed.
-      // Alternatively, can use updateDoc and explicitly set lastCompletedDate to the Timestamp or delete it if needed.
       await updateDoc(habitDocRef, {
         currentStreak: newStreak,
         longestStreak: newLongestStreak,
-        lastCompletedDate: Timestamp.fromDate(startOfDay(new Date())), // Store as Firestore Timestamp
+        lastCompletedDate: Timestamp.fromDate(startOfDay(new Date())),
       });
 
       await addPlayerXPAndCoins(rewards.XP, rewards.COINS, habit.targetStat, skillXpChange);
@@ -457,12 +468,87 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Reward functions
+  const addReward = async (rewardData: Omit<RewardItem, 'id' | 'createdAt'>) => {
+    if (!userId) {
+      toast({ title: "No Autenticado", description: "Debes iniciar sesión.", variant: "destructive" });
+      return;
+    }
+    const rewardColRef = collection(db, 'players', userId, 'rewards');
+    try {
+      await addDoc(rewardColRef, {
+        ...rewardData,
+        createdAt: Timestamp.now(),
+      });
+      toast({ title: "¡Recompensa Añadida!", description: `"${rewardData.title}" disponible en la tienda.` });
+    } catch (error) {
+      console.error("Error añadiendo recompensa:", error);
+      toast({ title: "Error", description: "No se pudo añadir la recompensa.", variant: "destructive" });
+    }
+  };
+
+  const updateReward = async (rewardId: string, rewardData: Partial<Omit<RewardItem, 'id' | 'createdAt'>>) => {
+    if (!userId) return;
+    const rewardDocRef = doc(db, 'players', userId, 'rewards', rewardId);
+    try {
+      await updateDoc(rewardDocRef, rewardData as any);
+      toast({ title: "¡Recompensa Actualizada!", variant: 'default' });
+    } catch (error) {
+      console.error("Error actualizando recompensa:", error);
+      toast({ title: "Error", description: "No se pudo actualizar la recompensa.", variant: "destructive" });
+    }
+  };
+
+  const deleteReward = async (rewardId: string) => {
+    if (!userId) return;
+    const rewardDocRef = doc(db, 'players', userId, 'rewards', rewardId);
+    try {
+      await deleteDoc(rewardDocRef);
+      toast({ title: "Recompensa Eliminada.", variant: 'destructive' });
+    } catch (error) {
+      console.error("Error eliminando recompensa:", error);
+      toast({ title: "Error", description: "No se pudo eliminar la recompensa.", variant: "destructive" });
+    }
+  };
+
+  const purchaseReward = async (rewardId: string) => {
+    if (!userId || !player) {
+      toast({ title: "Error", description: "Jugador no encontrado.", variant: "destructive" });
+      return;
+    }
+    const reward = rewards.find(r => r.id === rewardId);
+    if (!reward) {
+      toast({ title: "Error", description: "Recompensa no encontrada.", variant: "destructive" });
+      return;
+    }
+
+    if (player.coins < reward.cost) {
+      toast({ title: "Fondos Insuficientes", description: `No tienes suficientes monedas para "${reward.title}".`, variant: "destructive" });
+      return;
+    }
+
+    const playerDocRef = doc(db, 'players', userId);
+    try {
+      await updateDoc(playerDocRef, {
+        coins: player.coins - reward.cost,
+      });
+      // For now, we don't track "claimed" rewards, just deduct coins.
+      // In a future version, you might add the reward to a player's inventory or log the purchase.
+      toast({ title: "¡Recompensa Canjeada!", description: `Disfruta de "${reward.title}".`, variant: "default" });
+    } catch (error) {
+      console.error("Error canjeando recompensa:", error);
+      toast({ title: "Error", description: "No se pudo canjear la recompensa.", variant: "destructive" });
+    }
+  };
+
+
   return (
     <LifeQuestContext.Provider value={{
-      player, tasks, habits, isLoading,
+      player, tasks, habits, rewards, isLoading,
       addTask, updateTask, updateTaskStatus, deleteTask,
       addHabit, updateHabit, completeHabit, deleteHabit,
-      updatePlayerProfileAfterQuiz
+      updatePlayerProfileAfterQuiz,
+      addReward, updateReward, deleteReward, purchaseReward
     }}>
       {children}
     </LifeQuestContext.Provider>
@@ -476,4 +562,3 @@ export const useLifeQuest = () => {
   }
   return context;
 };
-

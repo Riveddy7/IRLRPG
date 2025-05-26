@@ -5,19 +5,17 @@ export interface PlayerSkill {
 }
 
 export interface PlayerStats {
-  [key: string]: PlayerSkill; 
+  [key: string]: PlayerSkill;
 }
 
 export interface Player {
   id: string;
   name: string;
-  // avatarUrl: string; // No longer stored directly
-  // dataAiHint?: string; // No longer stored directly
-  genderAvatarKey?: string; // Stores the key of the selected avatar
-  level: number; 
-  xp: number;    
-  coins: number; 
-  stats: PlayerStats; 
+  genderAvatarKey?: string;
+  level: number;
+  xp: number;
+  coins: number;
+  stats: PlayerStats;
   age?: number;
   improvementAreas?: string;
   statDescriptions?: { [key: string]: string };
@@ -35,8 +33,8 @@ export interface Task {
   status: TaskStatus;
   dueDate?: string; // ISO string
   priority: TaskPriority;
-  difficulty: Difficulty; 
-  targetStat?: string; 
+  difficulty: Difficulty;
+  targetStat?: string;
   createdAt: string; // ISO string
 }
 
@@ -49,10 +47,19 @@ export interface Habit {
   description?: string;
   type: HabitType;
   frequency: HabitFrequency;
-  targetStat?: string; 
-  difficulty: Difficulty; 
+  targetStat?: string;
+  difficulty: Difficulty;
   currentStreak: number;
   longestStreak: number;
   lastCompletedDate?: string; // ISO date string (YYYY-MM-DD)
+  createdAt: string; // ISO string
+}
+
+export interface RewardItem {
+  id: string;
+  title: string;
+  description?: string;
+  cost: number;
+  icon?: string; // For future use, e.g., a Lucide icon name
   createdAt: string; // ISO string
 }

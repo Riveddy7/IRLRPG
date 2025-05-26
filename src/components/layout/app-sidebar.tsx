@@ -1,14 +1,16 @@
+
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, ListChecks, Repeat, Settings, UserCircle2 } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Repeat, Settings, UserCircle2, Gift } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/tasks', label: 'Missions', icon: ListChecks },
+  // { href: '/tasks', label: 'Missions', icon: ListChecks }, // Temporarily hidden
   { href: '/habits', label: 'Disciplines', icon: Repeat },
+  { href: '/rewards', label: 'Rewards', icon: Gift },
   // { href: '/profile', label: 'Profile', icon: UserCircle2 },
   // { href: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -25,7 +27,7 @@ export function AppSidebar() {
             variant={pathname === item.href ? 'default' : 'ghost'}
             className={cn(
               'w-full justify-start text-base py-6',
-              pathname === item.href 
+              pathname === item.href
                 ? 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90'
                 : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
             )}
