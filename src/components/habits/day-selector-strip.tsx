@@ -48,8 +48,8 @@ export function DaySelectorStrip({
       </Button>
       <div className="flex-grow grid grid-cols-7 gap-1 overflow-x-auto">
         {dates.map((date) => {
-          constisSelected = isEqual(date, selectedDate);
-          constisCurrentToday = isToday(date);
+          const isSelected = isEqual(date, selectedDate);
+          const isCurrentToday = isToday(date);
           return (
             <Button
               key={date.toISOString()}
