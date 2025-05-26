@@ -20,6 +20,10 @@ export const metadata: Metadata = {
   title: 'LifeQuest RPG',
   description: 'Gamify your life with LifeQuest RPG!',
   manifest: '/manifest.json', // Link to the manifest file
+  themeColor: '#E53935', // Corresponds to manifest theme_color
+  icons: {
+    apple: 'https://placehold.co/180x180.png?text=LQApple', // Placeholder Apple touch icon
+  },
 };
 
 export default function RootLayout({
@@ -29,10 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
-      <head>
-        <meta name="theme-color" content="#E53935" /> {/* Corresponds to manifest theme_color */}
-        <link rel="apple-touch-icon" href="https://placehold.co/180x180.png?text=LQApple" /> {/* Placeholder Apple touch icon */}
-      </head>
+      {/* The <head> tag is now managed by Next.js via the metadata object */}
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans overflow-x-hidden`}>
         <AuthProvider> {/* Wrap with AuthProvider */}
           <LifeQuestProvider>
