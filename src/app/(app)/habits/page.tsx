@@ -39,26 +39,28 @@ export default function HabitsPage() {
   };
 
   const handleToggleComplete = (habitId: string) => {
-    completeHabit(habitId); // Store handles if it can be completed (e.g., only once for good daily)
+    completeHabit(habitId);
   };
-  
+
   const isTodaySelected = isToday(selectedDate);
   const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
-  const todayString = format(new Date(), 'yyyy-MM-dd');
+  const todayString = format(startOfDay(new Date()), 'yyyy-MM-dd');
 
-  const goodHabits = useMemo(() => habits.filter(h => h.type === 'Good'), [habits]);
+  const goodHabits = useMemo(() => habits.filter(h => h.type === 'Good' && h.frequency === 'Daily'), [habits]);
   
   const goodHabitsCompletedTodayCount = useMemo(() => {
-    return goodHabits.filter(h => h.frequency === 'Daily' && h.lastCompletedDate === todayString).length;
-  }, [goodHabits, todayString]); // Always based on *today's* completion for the progress bar
+    return goodHabits.filter(h => h.lastCompletedDate === todayString).length;
+  }, [goodHabits, todayString]);
 
   const dailyGoodHabitsCount = useMemo(() => {
-    return goodHabits.filter(h => h.frequency === 'Daily').length;
+    return goodHabits.length;
   }, [goodHabits]);
 
   const progressPercentage = dailyGoodHabitsCount > 0 ? (goodHabitsCompletedTodayCount / dailyGoodHabitsCount) * 100 : 0;
   
+  // Sort habits: by creation date (newest first)
   const sortedHabits = [...habits].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
 
   if (isLoading || !player) {
     return (
@@ -84,7 +86,7 @@ export default function HabitsPage() {
 
       <div className="bg-card p-4 rounded-lg shadow space-y-3">
         <div className="flex justify-between items-center text-sm font-medium">
-          <span className="text-card-foreground">Progreso Diario (Hoy)</span>
+          <span className="text-card-foreground">Progreso Disciplinas Diarias (Hoy)</span>
           <span className="text-primary">{goodHabitsCompletedTodayCount} / {dailyGoodHabitsCount}</span>
         </div>
         <Progress value={progressPercentage} className="h-2.5 [&>div]:bg-gradient-to-r [&>div]:from-green-400 [&>div]:to-emerald-500" />
@@ -111,7 +113,7 @@ export default function HabitsPage() {
           {sortedHabits.map((habit) => {
             const isCompletedOnSelectedDay = habit.lastCompletedDate === selectedDateString;
             
-            // Action is disabled if it's a good, daily habit, it's today, AND it's already completed today.
+            // Action is disabled (for completion) if it's a good, daily habit, it's today, AND it's already completed today.
             const isActionDisabledForToday = 
               isTodaySelected &&
               habit.type === 'Good' &&
@@ -169,3 +171,4 @@ export default function HabitsPage() {
     </div>
   );
 }
+
