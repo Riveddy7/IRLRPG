@@ -14,7 +14,7 @@ export const avatarOptions: AvatarOption[] = [
     src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/avatarHombre.webp?alt=media&token=ec2fc4d0-550e-482d-a223-7a0d8d5b557b', 
     alt: 'Avatar Masculino', 
     dataAiHint: 'epic hero',
-    fullBodySrc: 'https://placehold.co/270x480.png?text=Hero+1',
+    fullBodySrc: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/fullbodyHombre.webp?alt=media&token=70051533-fe61-40e7-b1da-357db9188f1c',
     fullBodyDataAiHint: 'male warrior'
   },
   { 
@@ -22,7 +22,7 @@ export const avatarOptions: AvatarOption[] = [
     src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/Whisk_storyboard7068df975e1e4e83a86c6aed.png?alt=media&token=64923987-e84f-47f8-b505-558283170450', 
     alt: 'Avatar Misterioso', 
     dataAiHint: 'fantasy hero',
-    fullBodySrc: 'https://placehold.co/270x480.png?text=Mage+1',
+    fullBodySrc: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/fullbodyAi.webp?alt=media&token=6744bdbc-3f4f-400f-8758-13fa549164a2',
     fullBodyDataAiHint: 'mystic mage'
   },
   { 
@@ -30,7 +30,7 @@ export const avatarOptions: AvatarOption[] = [
     src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/avatarMujer.webp?alt=media&token=65e6abed-fb11-4568-b637-6bfece2ff4de', 
     alt: 'Avatar Femenino', 
     dataAiHint: 'mystery adventurer',
-    fullBodySrc: 'https://placehold.co/270x480.png?text=Heroine+1',
+    fullBodySrc: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/fullbodyMujer.webp?alt=media&token=e0f861ab-9b74-4477-afd0-4b2ef31ac62c',
     fullBodyDataAiHint: 'female archer'
   },
 ];
