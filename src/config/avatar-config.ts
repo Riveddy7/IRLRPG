@@ -7,9 +7,9 @@ export interface AvatarOption {
 }
 
 export const avatarOptions: AvatarOption[] = [
-  { key: 'avatar1', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/avatar%20hombre.png?alt=media&token=55bc26a8-7dbd-4304-b055-5d94e78f7b1e', alt: 'Avatar Épico', dataAiHint: 'epic hero' },
-  { key: 'avatar2', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/avatar%20AI.png?alt=media&token=db2fa64e-63ff-4974-b770-b483c6fe0ac2', alt: 'Héroe Fantástico', dataAiHint: 'fantasy hero' },
-  { key: 'avatar3', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/Whisk_storyboard7255ac5009a5468994c27a3f-removebg-preview.png?alt=media&token=615ba162-11af-4fa5-810b-d1e0392ccfb3', alt: 'Aventurero Misterioso', dataAiHint: 'mystery adventurer' },
+  { key: 'avatar1', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/avatarHombre.webp?alt=media&token=ec2fc4d0-550e-482d-a223-7a0d8d5b557b', alt: 'Avatar Hombre', dataAiHint: 'epic hero' },
+  { key: 'avatar2', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/avatarAi.webp?alt=media&token=df14a347-a5cf-461a-8b8c-d1fd75529f72', alt: 'Avatar AI', dataAiHint: 'fantasy hero' },
+  { key: 'avatar3', src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/avatarMujer.webp?alt=media&token=65e6abed-fb11-4568-b637-6bfece2ff4de', alt: 'Avatar Mujer', dataAiHint: 'mystery adventurer' },
 ];
 
 export const defaultAvatarKey = avatarOptions[0].key;
