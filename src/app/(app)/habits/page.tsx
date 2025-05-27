@@ -17,11 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
-// Define an intermediate type for clarity and to potentially help the parser
 type SingleAISuggestion = SuggestDisciplinesOutput['suggestions'][number];
 
 interface SuggestedDisciplineDisplay extends SingleAISuggestion {
-  // Para manejar estado local si ya fue añadida
   added?: boolean;
 }
 
@@ -57,8 +55,9 @@ export default function HabitsPage() {
     handleCloseForm();
   };
 
+  // This function will now truly toggle the habit's completion for today.
   const handleToggleComplete = (habitId: string) => {
-    completeHabit(habitId);
+    completeHabit(habitId); // This function in the store now handles toggling
   };
 
   const isTodaySelected = isToday(selectedDate);
@@ -69,7 +68,7 @@ export default function HabitsPage() {
   
   const goodHabitsCompletedTodayCount = useMemo(() => {
     return goodDailyHabits.filter(h => h.lastCompletedDate === todayString).length;
-  }, [goodDailyHabits, todayString]);
+  }, [goodDailyHabits, todayString, habits]); // Added habits to dependency array
 
   const dailyGoodHabitsCount = useMemo(() => {
     return goodDailyHabits.length;
@@ -135,7 +134,6 @@ export default function HabitsPage() {
         description: `"${suggestion.title}" ha sido forjada.`,
     });
     
-    // Marcar como añadida para actualizar UI del botón en el diálogo
     setAiSuggestions(prev => prev.map((s, i) => i === index ? { ...s, added: true } : s));
   };
 
@@ -200,11 +198,7 @@ export default function HabitsPage() {
         <div className="space-y-3">
           {sortedHabits.map((habit) => {
             const isCompletedOnSelectedDay = habit.lastCompletedDate === selectedDateString;
-            const isActionDisabledForToday = 
-              isTodaySelected &&
-              habit.type === 'Good' &&
-              habit.frequency === 'Daily' &&
-              habit.lastCompletedDate === todayString;
+            // No isActionDisabled prop needed anymore as toggle is handled by completeHabit
 
             return (
               <HabitButton
@@ -214,7 +208,6 @@ export default function HabitsPage() {
                 isTodaySelected={isTodaySelected}
                 onToggleComplete={handleToggleComplete}
                 onEdit={handleOpenForm}
-                isActionDisabled={isActionDisabledForToday}
               />
             );
           })}
@@ -255,10 +248,9 @@ export default function HabitsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialogo para Sugerencias IA */}
       <Dialog open={isSuggestDialogVisible} onOpenChange={(isOpen) => {
           setIsSuggestDialogVisible(isOpen);
-          if (!isOpen) { // Resetear estado al cerrar
+          if (!isOpen) { 
             setSelectedSkillForSuggestion('');
             setAiSuggestions([]);
             setAiError(null);
@@ -349,5 +341,3 @@ export default function HabitsPage() {
     </div>
   );
 }
-
-    
