@@ -55,9 +55,8 @@ export default function HabitsPage() {
     handleCloseForm();
   };
 
-  // This function will now truly toggle the habit's completion for today.
   const handleToggleComplete = (habitId: string) => {
-    completeHabit(habitId); // This function in the store now handles toggling
+    completeHabit(habitId);
   };
 
   const isTodaySelected = isToday(selectedDate);
@@ -68,7 +67,7 @@ export default function HabitsPage() {
   
   const goodHabitsCompletedTodayCount = useMemo(() => {
     return goodDailyHabits.filter(h => h.lastCompletedDate === todayString).length;
-  }, [goodDailyHabits, todayString, habits]); // Added habits to dependency array
+  }, [goodDailyHabits, todayString, habits]);
 
   const dailyGoodHabitsCount = useMemo(() => {
     return goodDailyHabits.length;
@@ -195,11 +194,10 @@ export default function HabitsPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {sortedHabits.map((habit) => {
             const isCompletedOnSelectedDay = habit.lastCompletedDate === selectedDateString;
-            // No isActionDisabled prop needed anymore as toggle is handled by completeHabit
-
+            
             return (
               <HabitButton
                 key={habit.id}

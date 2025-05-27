@@ -9,7 +9,7 @@ export interface LongPressOptions {
 }
 
 // Helper function to check if the event is a touch event
-function isTouchEvent(event: Event): event is TouchEvent {
+function isTouchEvent(event: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent): event is TouchEvent {
   return "touches" in event;
 }
 
@@ -18,16 +18,16 @@ function getEventTarget(event: React.MouseEvent | React.TouchEvent): EventTarget
   return event.target;
 }
 
-
 const preventDefault = (event: Event) => {
-  // Check if the event is a TouchEvent and if there are still active touches
   if (isTouchEvent(event) && event.touches.length > 0) {
-    return; // Do not prevent default if there are still active touches (e.g., for scrolling)
+    return; 
   }
   if (event.cancelable) {
     event.preventDefault();
   }
 };
+
+const MOVE_THRESHOLD = 10; // Pixels
 
 export const useLongPress = (
   onLongPress: (event: React.MouseEvent | React.TouchEvent) => void,
@@ -36,60 +36,112 @@ export const useLongPress = (
 ) => {
   const [longPressTriggered, setLongPressTriggered] = useState(false);
   const timeout = useRef<NodeJS.Timeout>();
-  const targetRef = useRef<EventTarget | null>(null); // To store the event target
+  const targetRef = useRef<EventTarget | null>(null);
+  const pressStartCoords = useRef<{ x: number, y: number } | null>(null);
 
   const start = useCallback(
     (event: React.MouseEvent | React.TouchEvent) => {
-      // Prevent context menu on right-click if it's a mouse event
       if ('button' in event && (event as React.MouseEvent).button === 2) {
         return;
       }
 
-      targetRef.current = getEventTarget(event); // Store the target
+      targetRef.current = getEventTarget(event);
+      setLongPressTriggered(false); // Reset on new press start
 
-      if (shouldPreventDefault && targetRef.current) {
-        targetRef.current.addEventListener('touchend', preventDefault, { passive: false });
-        // For mouse, context menu is handled by onContextMenu
+      if (isTouchEvent(event)) {
+        pressStartCoords.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      } else if ('clientX' in event) { // MouseEvent
+        pressStartCoords.current = { x: event.clientX, y: event.clientY };
       }
 
       timeout.current = setTimeout(() => {
-        onLongPress(event);
-        setLongPressTriggered(true);
+        // Only trigger long press if not cancelled by movement
+        if (pressStartCoords.current) { 
+          onLongPress(event);
+          setLongPressTriggered(true);
+        }
       }, delay);
     },
-    [onLongPress, delay, shouldPreventDefault]
+    [onLongPress, delay]
   );
 
   const clear = useCallback(
     (event: React.MouseEvent | React.TouchEvent, shouldTriggerClick = true) => {
-       // Prevent context menu on mouse up if long press was not triggered
       if ('button' in event && (event as React.MouseEvent).button === 2) {
-        // if (longPressTriggered) event.preventDefault(); // Already handled by onContextMenu
+        pressStartCoords.current = null;
+        if (timeout.current) clearTimeout(timeout.current);
         return;
+      }
+
+      let movedTooMuch = false;
+      if (pressStartCoords.current) {
+        let currentX, currentY;
+        if (isTouchEvent(event)) {
+          currentX = event.changedTouches[0].clientX;
+          currentY = event.changedTouches[0].clientY;
+        } else if ('clientX' in event) { // MouseEvent
+          currentX = event.clientX;
+          currentY = event.clientY;
+        }
+
+        if (currentX !== undefined && currentY !== undefined) {
+          const deltaX = Math.abs(currentX - pressStartCoords.current.x);
+          const deltaY = Math.abs(currentY - pressStartCoords.current.y);
+          if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+            movedTooMuch = true;
+          }
+        }
       }
 
       if (timeout.current) {
         clearTimeout(timeout.current);
       }
 
+      if (movedTooMuch) {
+        setLongPressTriggered(false); // Ensure long press is also cancelled if moved
+        pressStartCoords.current = null;
+        return; 
+      }
+      
       if (shouldTriggerClick && !longPressTriggered && onClick) {
         onClick(event);
       }
       
       setLongPressTriggered(false);
-
-      if (shouldPreventDefault && targetRef.current) {
-        targetRef.current.removeEventListener('touchend', preventDefault);
-      }
+      pressStartCoords.current = null; 
     },
-    [shouldPreventDefault, onClick, longPressTriggered]
+    [onClick, longPressTriggered]
   );
   
   const handleContextMenu = (event: React.MouseEvent) => {
-    // Prevent context menu if long press is configured,
-    // as right-click often triggers context menu which we want to avoid if it's used for long press.
     if (shouldPreventDefault) {
       event.preventDefault();
+    }
+  };
+
+  // Added onMouseMove and onTouchMove to cancel timeout if significant movement occurs *during* the press
+  const handleMove = (event: React.MouseEvent | React.TouchEvent) => {
+    if (!pressStartCoords.current) return;
+
+    let currentX, currentY;
+    if (isTouchEvent(event)) {
+      currentX = event.touches[0].clientX;
+      currentY = event.touches[0].clientY;
+    } else if ('clientX' in event) { // MouseEvent
+      currentX = event.clientX;
+      currentY = event.clientY;
+    } else {
+      return;
+    }
+
+    if (currentX !== undefined && currentY !== undefined) {
+      const deltaX = Math.abs(currentX - pressStartCoords.current.x);
+      const deltaY = Math.abs(currentY - pressStartCoords.current.y);
+      if (deltaX > MOVE_THRESHOLD || deltaY > MOVE_THRESHOLD) {
+        if (timeout.current) clearTimeout(timeout.current);
+        pressStartCoords.current = null; // Mark as moved, so 'clear' won't trigger click
+        // No need to setLongPressTriggered(false) here, timeout clear handles it for long press.
+      }
     }
   };
 
@@ -97,8 +149,19 @@ export const useLongPress = (
     onMouseDown: (e: React.MouseEvent) => start(e),
     onTouchStart: (e: React.TouchEvent) => start(e),
     onMouseUp: (e: React.MouseEvent) => clear(e),
-    onMouseLeave: (e: React.MouseEvent) => clear(e, false), // مهمه لمنع التشغيل عند ترك الماوس
+    onMouseMove: (e: React.MouseEvent) => { // Only listen if mouse is down (button pressed)
+        if (e.buttons === 1) handleMove(e);
+    },
+    onTouchMove: (e: React.TouchEvent) => handleMove(e),
+    onMouseLeave: (e: React.MouseEvent) => {
+        // If mouse leaves while pressed, treat as a cancel (no click, no long press)
+        if (pressStartCoords.current) {
+             if (timeout.current) clearTimeout(timeout.current);
+             setLongPressTriggered(false);
+             pressStartCoords.current = null;
+        }
+    },
     onTouchEnd: (e: React.TouchEvent) => clear(e),
-    onContextMenu: handleContextMenu, // Prevent context menu on right-click
+    onContextMenu: handleContextMenu,
   };
 };
