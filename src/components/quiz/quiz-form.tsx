@@ -18,15 +18,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles, AlertTriangle, UserCheck, BookOpen, Dices } from "lucide-react";
+import { Loader2, Sparkles, AlertTriangle, UserCheck, BookOpen, Dices, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
 import { useRouter } from 'next/navigation';
 import { generatePlayerStats, type GeneratePlayerStatsInput, type GeneratePlayerStatsOutput } from '@/ai/flows/generate-player-stats-flow';
-import type { Player, PlayerStats as PlayerStatsType } from '@/types';
-import { avatarOptions, getAvatarDetails } from '@/config/avatar-config'; // Import avatar configuration
+import type { Player, PlayerStats as PlayerStatsType, PlayerSkill } from '@/types';
+import { avatarOptions } from '@/config/avatar-config';
+import { cn } from '@/lib/utils';
 
 const quizFormSchema = z.object({
   nickname: z.string().min(3, "Tu nombre de héroe debe tener al menos 3 letras.").max(50, "Nombre demasiado largo."),
@@ -44,13 +43,15 @@ export function QuizForm() {
   const [generatedAIData, setGeneratedAIData] = useState<GeneratePlayerStatsOutput | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [currentAvatarIndex, setCurrentAvatarIndex] = useState(0);
 
   const form = useForm<QuizFormValues>({
     resolver: zodResolver(quizFormSchema),
     defaultValues: {
       nickname: player?.name && player.name !== "Novato" ? player.name : "",
       age: player?.age || undefined,
-      genderAvatarKey: player?.genderAvatarKey || "",
+      genderAvatarKey: player?.genderAvatarKey || avatarOptions[0].key, // Default to first avatar's key
       improvementAreas: player?.improvementAreas || "",
     },
   });
@@ -60,6 +61,20 @@ export function QuizForm() {
       router.replace('/dashboard');
     }
   }, [player, router]);
+
+  useEffect(() => {
+    const initialKey = form.getValues("genderAvatarKey");
+    if (initialKey) {
+      const initialIndex = avatarOptions.findIndex(opt => opt.key === initialKey);
+      if (initialIndex !== -1) {
+        setCurrentAvatarIndex(initialIndex);
+      }
+    } else if (avatarOptions.length > 0) {
+      // Set initial form value if not already set and options are available
+      form.setValue("genderAvatarKey", avatarOptions[0].key);
+      setCurrentAvatarIndex(0);
+    }
+  }, [form]);
 
 
   const handleGenerateStats = async () => {
@@ -78,7 +93,7 @@ export function QuizForm() {
     } catch (error: any) {
       console.error("Error generando stats AI:", error);
       let message = "El Oráculo está meditando o hubo un error al procesar tu petición. Intenta de nuevo en un momento.";
-      if (error.message?.includes("format")) {
+      if (error.message?.includes("La IA no pudo generar los atributos del jugador según el formato esperado.")) {
         message = "La IA no pudo generar los atributos del jugador según el formato esperado. Revisa la consola para más detalles.";
       } else if (error.message) {
         message = error.message;
@@ -108,7 +123,7 @@ export function QuizForm() {
     const profileUpdate: Partial<Player> = {
       name: data.nickname,
       age: data.age,
-      genderAvatarKey: data.genderAvatarKey, // Only store the key
+      genderAvatarKey: data.genderAvatarKey,
       improvementAreas: data.improvementAreas,
       stats: initialPlayerStats, 
       statDescriptions: newStatDescriptions,
@@ -118,6 +133,19 @@ export function QuizForm() {
     setIsSubmitting(false);
     router.push('/dashboard'); 
   }
+
+  const totalAvatars = avatarOptions.length;
+  const handleNextAvatar = () => {
+    const nextIndex = (currentAvatarIndex + 1) % totalAvatars;
+    setCurrentAvatarIndex(nextIndex);
+    form.setValue("genderAvatarKey", avatarOptions[nextIndex].key, { shouldValidate: true });
+  };
+  const handlePrevAvatar = () => {
+    const prevIndex = (currentAvatarIndex - 1 + totalAvatars) % totalAvatars;
+    setCurrentAvatarIndex(prevIndex);
+    form.setValue("genderAvatarKey", avatarOptions[prevIndex].key, { shouldValidate: true });
+  };
+
 
   if (player === undefined) { 
     return (
@@ -164,39 +192,47 @@ export function QuizForm() {
                 </FormItem>
               )}
             />
+            
             <FormField
               control={form.control}
               name="genderAvatarKey"
-              render={({ field }) => (
+              render={({ field }) => ( // field is implicitly used by form.setValue
                 <FormItem className="space-y-3">
-                  <FormLabel className="text-lg">Elige tu Estandarte (Avatar)</FormLabel>
+                  <FormLabel className="text-lg text-center block">Elige tu avatar</FormLabel>
                   <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col sm:flex-row gap-4 pt-2"
-                    >
-                      {avatarOptions.map(option => (
-                        <FormItem key={option.key} className="flex-1">
-                          <FormControl>
-                             <RadioGroupItem value={option.key} id={option.key} className="sr-only" />
-                          </FormControl>
-                          <Label
-                            htmlFor={option.key}
-                            className={`flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all
-                            ${field.value === option.key ? "border-primary ring-2 ring-primary" : ""}`}
-                          >
-                            <Image src={option.src} alt={option.alt} width={80} height={80} className="mb-2 rounded-md shadow-md" data-ai-hint={option.dataAiHint}/>
-                            <span className="text-sm font-medium">{option.alt}</span>
-                          </Label>
-                        </FormItem>
-                      ))}
-                    </RadioGroup>
+                    <div className="flex items-center justify-center space-x-2 sm:space-x-4">
+                      <Button type="button" variant="outline" size="icon" onClick={handlePrevAvatar} aria-label="Avatar anterior">
+                        <ChevronLeft className="h-6 w-6" />
+                      </Button>
+                      
+                      <div className="relative w-52 h-96 sm:w-60 sm:h-[340px] overflow-hidden rounded-lg shadow-lg border-2 border-primary bg-muted/30 flex items-center justify-center">
+                        {avatarOptions.length > 0 && (
+                          <Image
+                            key={avatarOptions[currentAvatarIndex].key} // Add key for re-renders
+                            src={avatarOptions[currentAvatarIndex].fullBodySrc}
+                            alt={avatarOptions[currentAvatarIndex].alt}
+                            width={270} // Original width for 9:16
+                            height={480} // Original height for 9:16
+                            className="object-contain h-full w-auto animate-idle-bob" // Use object-contain to see full image
+                            data-ai-hint={avatarOptions[currentAvatarIndex].fullBodyDataAiHint}
+                            priority // Preload the current avatar image
+                          />
+                        )}
+                      </div>
+                      
+                      <Button type="button" variant="outline" size="icon" onClick={handleNextAvatar} aria-label="Siguiente avatar">
+                        <ChevronRight className="h-6 w-6" />
+                      </Button>
+                    </div>
                   </FormControl>
+                  {avatarOptions.length > 0 && (
+                     <p className="text-center text-muted-foreground font-medium">{avatarOptions[currentAvatarIndex].alt}</p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="improvementAreas"
