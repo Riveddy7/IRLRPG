@@ -194,7 +194,7 @@ export default function HabitsPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {sortedHabits.map((habit) => {
             const isCompletedOnSelectedDay = habit.lastCompletedDate === selectedDateString;
             
