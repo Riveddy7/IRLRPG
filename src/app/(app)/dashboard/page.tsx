@@ -118,7 +118,6 @@ export default function DashboardPage() {
                   {player.name || <Skeleton className="h-6 w-24 mx-auto" />}
                 </h2>
               </div>
-              {/* XPProgress is a card itself, so we don't need to wrap it in another red bar unless for specific styling */}
               <XPProgress currentXP={player.xp} currentLevel={player.level} />
             </div>
           </div>
