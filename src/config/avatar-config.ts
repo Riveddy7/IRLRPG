@@ -19,7 +19,7 @@ export const avatarOptions: AvatarOption[] = [
   },
   { 
     key: 'avatar2', 
-    src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/Whisk_storyboard7068df975e1e4e83a86c6aed.png?alt=media&token=64923987-e84f-47f8-b505-558283170450', 
+    src: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/avatarAi.webp?alt=media&token=df14a347-a5cf-461a-8b8c-d1fd75529f72', 
     alt: 'Avatar Misterioso', 
     dataAiHint: 'fantasy hero',
     fullBodySrc: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/fullbodyAi.webp?alt=media&token=6744bdbc-3f4f-400f-8758-13fa549164a2',
