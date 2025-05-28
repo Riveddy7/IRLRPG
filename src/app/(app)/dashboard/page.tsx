@@ -2,8 +2,9 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { PlayerAvatar } from '@/components/dashboard/player-avatar'; // Used for Desktop and Full Body
+import { PlayerAvatar } from '@/components/dashboard/player-avatar'; 
 import { PlayerStatsRadarChart } from '@/components/dashboard/player-stats-radar-chart';
+import { PlayerStats } from '@/components/dashboard/player-stats';
 import { XPProgress } from '@/components/dashboard/xp-progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
@@ -32,18 +33,17 @@ export default function DashboardPage() {
       <div className="space-y-6">
         {/* Skeleton for Mobile Top Section */}
         <div className="md:hidden space-y-4">
-          <Card className="overflow-hidden shadow-xl border-2 border-primary bg-card/90">
-            <div className="flex p-3 gap-3">
-              <div className="w-1/3 flex flex-col items-center space-y-2 p-2 bg-background/30 rounded-lg">
-                <Skeleton className="w-20 h-20 rounded-full" />
-                <Skeleton className="h-5 w-16" />
-              </div>
-              <div className="w-2/3 flex flex-col space-y-2">
-                <Skeleton className="h-10 w-full" /> {/* Nickname placeholder */}
-                <Skeleton className="h-20 w-full" /> {/* XP Progress placeholder */}
-              </div>
+          <div className="flex items-center gap-x-3 sm:gap-x-4">
+            <div className="w-1/2">
+              <Skeleton className="aspect-square w-24 h-24 sm:w-28 sm:h-28 rounded-lg" />
             </div>
-          </Card>
+            <div className="w-1/2">
+              <Skeleton className="h-7 w-3/4" /> {/* Nickname */}
+            </div>
+          </div>
+          <div className="mt-3 sm:mt-4">
+            <Skeleton className="h-8 w-full" /> {/* XP Progress placeholder */}
+          </div>
         </div>
 
         {/* Skeleton for Desktop Top Section */}
@@ -54,10 +54,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Skeleton for Full Body Avatar and Radar Chart */}
+        {/* Skeleton for Full Body Avatar and Radar Chart OR Skills List */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          <Skeleton className="h-72 md:h-96 lg:col-span-1 rounded-lg" /> {/* Full body avatar placeholder */}
-          <Skeleton className="h-72 md:h-96 lg:col-span-2 rounded-lg" /> {/* Radar chart placeholder */}
+           {/* Mobile: Skills List Skeleton */}
+          <div className="md:hidden col-span-1">
+            <Skeleton className="h-72 w-full rounded-lg" />
+          </div>
+          {/* Desktop: Full Body Avatar and Radar Chart Skeletons */}
+          <Skeleton className="h-72 md:h-96 lg:col-span-1 rounded-lg hidden md:block" /> {/* Full body avatar placeholder */}
+          <Skeleton className="h-72 md:h-96 lg:col-span-2 rounded-lg hidden md:block" /> {/* Radar chart placeholder */}
         </div>
       </div>
     );
@@ -84,44 +89,39 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8"> {/* Increased general spacing */}
       {/* Mobile-specific Top Section */}
-      <div className="md:hidden space-y-4">
-        <Card className="overflow-hidden shadow-xl border-2 border-primary bg-card/90">
-          <div className="flex p-3 sm:p-4 gap-3 sm:gap-4 items-stretch">
-            {/* Left Column: Avatar + Level */}
-            <div className="w-1/3 flex flex-col items-center justify-around p-2 bg-background/30 rounded-lg">
-              {avatarDetails ? (
+      <div className="md:hidden space-y-3"> {/* Added space-y for elements within mobile view */}
+        <div className="flex items-center gap-x-3 sm:gap-x-4">
+          <div className="w-1/2">
+            {avatarDetails ? (
+              <div className="aspect-square w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-lg overflow-hidden border-2 border-accent relative animate-idle-bob shadow-md">
                 <Image
                   src={avatarDetails.src}
                   alt={avatarDetails.alt}
-                  width={96} 
-                  height={96}
-                  className="rounded-full border-2 border-accent object-cover aspect-square shadow-md"
+                  layout="fill"
+                  objectFit="cover"
                   data-ai-hint={avatarDetails.dataAiHint}
+                  priority
                 />
-              ) : (
-                <Skeleton className="w-20 h-20 sm:w-24 sm:h-24 rounded-full" />
-              )}
-              <div className="mt-2 text-center">
-                <p className="text-xs sm:text-sm font-semibold text-accent flex items-center justify-center">
-                  <LevelIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                  Nivel {player.level}
-                </p>
               </div>
-            </div>
-
-            {/* Right Column: Nickname + XP Progress */}
-            <div className="w-2/3 flex flex-col space-y-2 sm:space-y-3 justify-center">
-              <div className="p5-panel-header !py-2 !px-3 text-center rounded-md">
-                <h2 className="text-base sm:text-lg font-bold text-primary-foreground truncate" title={player.name}>
-                  {player.name || <Skeleton className="h-6 w-24 mx-auto" />}
-                </h2>
-              </div>
-              <XPProgress currentXP={player.xp} currentLevel={player.level} />
-            </div>
+            ) : (
+              <Skeleton className="aspect-square w-24 h-24 sm:w-28 sm:h-28 rounded-lg" />
+            )}
           </div>
-        </Card>
+          <div className="w-1/2 flex flex-col justify-center items-start">
+            <h2 className="text-lg sm:text-xl font-bold text-primary truncate" title={player.name}>
+              {player.name || <Skeleton className="h-7 w-24" />}
+            </h2>
+             <p className="text-xs sm:text-sm text-accent flex items-center">
+                <LevelIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                Nivel {player.level}
+            </p>
+          </div>
+        </div>
+        <div className="pt-1"> {/* Small top padding for XP bar */}
+          <XPProgress currentXP={player.xp} currentLevel={player.level} />
+        </div>
       </div>
 
       {/* Desktop-specific Top Section */}
@@ -134,9 +134,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Common Section: Full Body Avatar and Radar Chart */}
-      <div className="mt-6 space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+      {/* Mobile: Skills List */}
+      <div className="md:hidden mt-6">
+        <PlayerStats stats={player.stats} statDescriptions={player.statDescriptions}/>
+      </div>
+
+      {/* Desktop: Full Body Avatar and Radar Chart */}
+      <div className="hidden md:grid md:grid-cols-3 gap-8 items-center mt-6">
           <div className="md:col-span-1 flex justify-center items-center md:h-96">
             {fullBodyAvatarDetails ? (
               <div className="relative w-52 h-96 sm:w-60 md:w-auto md:h-full max-h-[480px]">
@@ -168,7 +172,6 @@ export default function DashboardPage() {
               </Card>
             )}
           </div>
-        </div>
       </div>
     </div>
   );
