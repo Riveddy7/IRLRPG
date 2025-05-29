@@ -10,6 +10,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import type { Discipline } from '@/types/firestore-schemas'; // Using 'type' import
 
 // Define Schemas internamente - DO NOT EXPORT THESE CONSTANTS
 const SuggestedDisciplineSchema = z.object({
@@ -22,6 +25,7 @@ const SuggestDisciplinesInputSchema = z.object({
   skillName: z.string().describe('El nombre de la skill para la cual mejorar (ej: "Cuerpo Templado", "Mente Ágil", "Carisma Social").'),
   skillDescription: z.string().describe('La descripción de la skill, para dar contexto (ej: "Capacidad de resistir y superar desafíos físicos.", "Agilidad mental para resolver problemas y aprender.", "Habilidad para conectar e influir positivamente en otros.").'),
   existingDisciplineTitles: z.array(z.string()).describe('Un array de títulos de disciplinas que el jugador ya tiene, para evitar sugerencias repetitivas.'),
+  generalSkillId: z.string().describe('The ID of the general skill this discipline belongs to.'),
 });
 
 const SuggestDisciplinesOutputSchema = z.object({
@@ -74,27 +78,59 @@ const suggestDisciplinesFlow = ai.defineFlow(
         throw new Error("La IA no pudo generar las dos sugerencias de disciplinas esperadas o el formato es incorrecto.");
     }
     
+    // Validate and adjust difficulties as before
     const difficulties = output.suggestions.map(s => s.difficulty);
     if (!(difficulties.includes('Easy') && difficulties.includes('Hard'))) {
         console.warn("La IA no generó una disciplina Easy y una Hard. Se recibió:", difficulties, "Sugerencias:", output.suggestions);
-        // Attempt to fix if one is missing and the other is duplicated, or default if structure is wrong
         if (output.suggestions[0].difficulty === output.suggestions[1].difficulty) {
             output.suggestions[1].difficulty = output.suggestions[0].difficulty === 'Easy' ? 'Hard' : 'Easy';
-            toast({title: "Ajuste IA", description: "Se ajustó la dificultad de una sugerencia.", variant:"default"});
+            // Consider if toast is available/appropriate in this server-side flow context
+            // toast({title: "Ajuste IA", description: "Se ajustó la dificultad de una sugerencia.", variant:"default"});
+            console.log("Ajuste IA: Se ajustó la dificultad de una sugerencia.");
         } else if (!difficulties.includes('Easy')) {
-             output.suggestions.find(s => s.difficulty !== 'Hard')!.difficulty = 'Easy';
+             const easySuggestion = output.suggestions.find(s => s.difficulty !== 'Hard');
+             if(easySuggestion) easySuggestion.difficulty = 'Easy';
         } else if (!difficulties.includes('Hard')) {
-             output.suggestions.find(s => s.difficulty !== 'Easy')!.difficulty = 'Hard';
+             const hardSuggestion = output.suggestions.find(s => s.difficulty !== 'Easy');
+             if(hardSuggestion) hardSuggestion.difficulty = 'Hard';
         } else {
-            throw new Error("La IA no generó una disciplina Easy y una Hard con el formato esperado.");
+            // This case should ideally not be reached if the above logic is sound
+            console.error("Error no manejado en ajuste de dificultad de IA.");
+            // throw new Error("La IA no generó una disciplina Easy y una Hard con el formato esperado después de los ajustes.");
         }
     }
-     // Ensure order: Easy first, Hard second
+    
+    // Ensure order: Easy first, Hard second
     output.suggestions.sort((a, b) => {
       if (a.difficulty === 'Easy' && b.difficulty === 'Hard') return -1;
       if (a.difficulty === 'Hard' && b.difficulty === 'Easy') return 1;
       return 0;
     });
+
+    // Persist AI-generated suggestions to Firestore
+    for (const suggestion of output.suggestions) {
+      const newDiscipline: Omit<Discipline, 'id'> = { // Let Firestore generate ID
+        name: suggestion.title,
+        description: suggestion.description,
+        difficulty: suggestion.difficulty as 'Easy' | 'Hard', // Already validated
+        generalSkillId: input.generalSkillId,
+        isAIGenerated: true,
+        selectionCount: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        // No `id` field here, Firestore will generate it.
+      };
+      try {
+        const docRef = await addDoc(collection(db, 'disciplines'), newDiscipline);
+        console.log(`AI-generated discipline "${suggestion.title}" saved with ID: ${docRef.id}`);
+        // Optionally, we could add the generated ID back to the suggestion object if needed by the client,
+        // but the current task is to return the original AI output structure.
+      } catch (error) {
+        console.error(`Error saving AI-generated discipline "${suggestion.title}" to Firestore:`, error);
+        // Do not block returning suggestions to the user.
+        // Consider more robust error reporting if this becomes a frequent issue.
+      }
+    }
 
     return output;
   }
