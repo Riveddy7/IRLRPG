@@ -61,7 +61,7 @@ export function RewardCard({ reward, onEdit, canAfford }: RewardCardProps) {
           size="sm"
           className="p5-button-accent text-sm"
           disabled={!canAfford}
-          aria-label={`Canjear ${reward.title} por ${reward.cost} puntos`}
+          aria-label={`Canjear ${reward.title} por ${reward.cost} monedas`}
         >
           <ShoppingCart className="mr-2 h-4 w-4" /> Canjear
         </Button>

@@ -28,10 +28,10 @@ import { avatarOptions } from '@/config/avatar-config';
 import { cn } from '@/lib/utils';
 
 const quizFormSchema = z.object({
-  nickname: z.string().min(3, "Tu nombre debe tener al menos 3 caracteres.").max(50, "El nombre es demasiado largo."),
-  age: z.coerce.number().min(1, "Debes indicar tu edad.").max(150, "Verifica la edad ingresada."),
+  nickname: z.string().min(3, "Tu nombre de héroe debe tener al menos 3 letras.").max(50, "Nombre demasiado largo."),
+  age: z.coerce.number().min(1, "Debes indicar tu edad.").max(150, "Edad un poco... ¿extrema?"),
   genderAvatarKey: z.string().min(1, "Debes elegir un avatar."),
-  improvementAreas: z.string().min(20, "Describe tus objetivos con un poco más de detalle (mínimo 20 caracteres).").max(1000, "Intenta ser conciso en tu descripción."),
+  improvementAreas: z.string().min(20, "¡Cuéntanos más! Unas 20 letras al menos.").max(1000, "Concreto y al grano, por favor."),
 });
 
 type QuizFormValues = z.infer<typeof quizFormSchema>;
@@ -49,7 +49,7 @@ export function QuizForm() {
   const form = useForm<QuizFormValues>({
     resolver: zodResolver(quizFormSchema),
     defaultValues: {
-      nickname: player?.name && player.name !== "Principiante" ? player.name : "",
+      nickname: player?.name && player.name !== "Novato" ? player.name : "",
       age: player?.age || undefined,
       genderAvatarKey: player?.genderAvatarKey || avatarOptions[0].key, // Default to first avatar's key
       improvementAreas: player?.improvementAreas || "",
@@ -92,13 +92,11 @@ export function QuizForm() {
       setGeneratedAIData(result);
     } catch (error: any) {
       console.error("Error generando stats AI:", error);
-      let message = "Hubo un error al procesar tu solicitud. Inténtalo de nuevo en un momento.";
-      // Retain specific error for format mismatch, but make it more user-friendly
+      let message = "El Oráculo está meditando o hubo un error al procesar tu petición. Intenta de nuevo en un momento.";
       if (error.message?.includes("La IA no pudo generar los atributos del jugador según el formato esperado.")) {
-        message = "Hubo un error al generar tus estadísticas con el formato esperado. Intenta reformular tus metas o contacta a soporte si persiste.";
-      } else if (error.message && !error.message.includes("El Oráculo está meditando")) { // Avoid generic AI error messages if a more specific one is present
-        // Potentially keep more specific AI errors if they are user-friendly, otherwise use the generic one
-        // For now, let's use the generic one for simplicity unless it's the format error.
+        message = "La IA no pudo generar los atributos del jugador según el formato esperado. Revisa la consola para más detalles.";
+      } else if (error.message) {
+        message = error.message;
       }
       if (error.cause) console.error("Causa del error:", error.cause);
       setAiError(message);
@@ -109,7 +107,7 @@ export function QuizForm() {
 
   async function onSubmit(data: QuizFormValues) {
     if (!generatedAIData) {
-      setAiError("Primero debes generar tus estadísticas iniciales.");
+      setAiError("Primero debes generar tus atributos con la ayuda del Oráculo.");
       return;
     }
     setIsSubmitting(true);
@@ -153,7 +151,7 @@ export function QuizForm() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-lg text-muted-foreground">Cargando información...</p>
+        <p className="mt-4 text-lg text-muted-foreground">Consultando los anales...</p>
       </div>
     );
   }
@@ -161,8 +159,8 @@ export function QuizForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto bg-card/80 backdrop-blur-sm shadow-2xl border-primary/50">
       <CardHeader className="text-center">
-        <CardTitle className="text-3xl p5-text-shadow flex items-center justify-center"><UserCheck className="mr-3 h-8 w-8" /> Completa tu Perfil</CardTitle>
-        <CardDescription>Define tus datos iniciales para personalizar tu experiencia.</CardDescription>
+        <CardTitle className="text-3xl p5-text-shadow flex items-center justify-center"><UserCheck className="mr-3 h-8 w-8" /> Forja tu Leyenda</CardTitle>
+        <CardDescription>El primer paso en tu gran aventura. Define quién eres y qué aspiras a ser.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -172,11 +170,11 @@ export function QuizForm() {
               name="nickname"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg">Tu Nombre</FormLabel>
+                  <FormLabel className="text-lg">Nombre de Héroe</FormLabel>
                   <FormControl>
                     <Input placeholder="Ej: 'El Intrépido'" {...field} className="text-base" />
                   </FormControl>
-                  <FormDescription>Este es el nombre que se mostrará en la aplicación.</FormDescription>
+                  <FormDescription>Así te conocerán en estas tierras.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -186,7 +184,7 @@ export function QuizForm() {
               name="age"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg">Tu Edad</FormLabel>
+                  <FormLabel className="text-lg">Edad de Aventurero</FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="Ej: 25" {...field} className="text-base" />
                   </FormControl>
@@ -240,16 +238,16 @@ export function QuizForm() {
               name="improvementAreas"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg">Tus Metas y Aspiraciones</FormLabel>
+                  <FormLabel className="text-lg">Tu Manifiesto Interior</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Describe las áreas de tu vida que deseas mejorar, tus objetivos principales, tus aspiraciones, etc. (Ej: 'Quiero ser más disciplinado con mis estudios, mejorar mi condición física y aprender a ser un líder más efectivo.')"
+                      placeholder="Describe las áreas de tu vida que anhelas transformar, tus metas, tus sueños más profundos... (Ej: 'Quiero ser más disciplinado con mis estudios, mejorar mi condición física y aprender a ser un líder más efectivo.')"
                       {...field}
                       rows={5}
                       className="text-base"
                     />
                   </FormControl>
-                  <FormDescription>Esta información nos ayudará a definir una base para tus habilidades.</FormDescription>
+                  <FormDescription>El Oráculo usará estas palabras para revelar tus talentos innatos.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -258,7 +256,7 @@ export function QuizForm() {
             {!generatedAIData && (
               <Button type="button" onClick={handleGenerateStats} disabled={isGeneratingStats} className="w-full p5-button-accent py-6 text-lg">
                 {isGeneratingStats ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Sparkles className="mr-2 h-6 w-6" />}
-                {isGeneratingStats ? "Procesando..." : "Generar Mis Estadísticas"}
+                {isGeneratingStats ? "El Oráculo está deliberando..." : "Consultar al Oráculo (Generar Atributos)"}
               </Button>
             )}
 
@@ -267,11 +265,11 @@ export function QuizForm() {
             {generatedAIData && (
               <Card className="mt-6 bg-primary/5 border-primary/30">
                 <CardHeader className="p5-panel-header items-center !pb-3">
-                  <CardTitle className="text-xl flex items-center"><Dices className="mr-2"/> ¡Tus Estadísticas Iniciales!</CardTitle>
+                  <CardTitle className="text-xl flex items-center"><Dices className="mr-2"/> ¡Tu Destino se Manifiesta!</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
                   <p className="text-muted-foreground italic text-center">"{generatedAIData.characterPreamble}"</p>
-                  <h4 className="font-semibold text-lg text-center pt-2">Tus Estadísticas Base:</h4>
+                  <h4 className="font-semibold text-lg text-center pt-2">Tus Atributos Primordiales:</h4>
                   <ul className="space-y-2">
                     {generatedAIData.stats.map(stat => (
                       <li key={stat.name} className="p-2 bg-card/50 rounded-md shadow-sm">
@@ -279,7 +277,7 @@ export function QuizForm() {
                       </li>
                     ))}
                   </ul>
-                  <p className="text-xs text-muted-foreground text-center pt-2">Estas 5 estadísticas iniciales servirán como base para tu progreso. Cada una comenzará en Etapa 1, con 0 Puntos.</p>
+                  <p className="text-xs text-muted-foreground text-center pt-2">Estos 5 atributos formarán el núcleo de tu ser. Cada uno comenzará en Nivel 1, XP 0.</p>
                 </CardContent>
               </Card>
             )}
@@ -287,7 +285,7 @@ export function QuizForm() {
           <CardFooter>
             <Button type="submit" className="w-full p5-button-primary py-6 text-xl" disabled={!generatedAIData || isSubmitting || isGeneratingStats}>
               {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <BookOpen className="mr-2 h-6 w-6" />}
-              {isSubmitting ? "Guardando Perfil..." : "Comenzar"}
+              {isSubmitting ? "Forjando tu Destino..." : "¡Empezar Aventura!"}
             </Button>
           </CardFooter>
         </form>

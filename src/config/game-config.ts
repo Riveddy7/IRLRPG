@@ -38,7 +38,7 @@ export const getSkillLevelFromXP = (xp: number): number => {
 };
 
 // Recompensas y Penalizaciones
-export const DIFFICULTY_OPTIONS: Readonly<string[]> = ['Fácil', 'Difícil'];
+export const DIFFICULTY_OPTIONS: Readonly<string[]> = ['Easy', 'Hard'];
 
 export const HABIT_REWARDS = {
   GOOD: {
@@ -59,14 +59,14 @@ export const TASK_REWARDS = {
 
 // STAT_NAMES ya no se usa como fuente principal, los stats son dinámicos
 export const STAT_NAMES: { [key: string]: string } = {
-  capacidad: "Capacidad",
-  determinacion: "Determinación",
-  enfoque: "Enfoque",
-  comunicacion: "Comunicación",
-  atencion: "Atención",
+  power: "Poder",
+  guts: "Agallas",
+  intel: "Intelecto",
+  charm: "Carisma",
+  focus: "Concentración",
 };
 
-export const TASK_STATUS_OPTIONS: Readonly<string[]> = ['Pendiente', 'En Progreso', 'Completado'];
-export const TASK_PRIORITY_OPTIONS: Readonly<string[]> = ['Baja', 'Media', 'Alta', 'Urgente'];
-export const HABIT_TYPE_OPTIONS: Readonly<string[]> = ['Bueno', 'A Mejorar'];
-export const HABIT_FREQUENCY_OPTIONS: Readonly<string[]> = ['Diario', 'Semanal'];
+export const TASK_STATUS_OPTIONS: Readonly<string[]> = ['To Do', 'In Progress', 'Done'];
+export const TASK_PRIORITY_OPTIONS: Readonly<string[]> = ['Low', 'Medium', 'High', 'Critical'];
+export const HABIT_TYPE_OPTIONS: Readonly<string[]> = ['Good', 'Bad'];
+export const HABIT_FREQUENCY_OPTIONS: Readonly<string[]> = ['Daily', 'Weekly'];
