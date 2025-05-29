@@ -74,14 +74,14 @@ export function TaskCard({ task, onEdit }: TaskCardProps) {
         {task.targetStat && (
           <div className="flex items-center text-xs text-muted-foreground">
             <Target className="mr-1.5 h-4 w-4 text-accent" />
-            Habilidad Asociada: <span className="font-semibold ml-1 text-foreground">{task.targetStat}</span>
+            Skill Objetivo: <span className="font-semibold ml-1 text-foreground">{task.targetStat}</span>
           </div>
         )}
         <div className="flex items-center text-xs text-muted-foreground">
           <Zap className="mr-1.5 h-4 w-4 text-yellow-400" />
-          Puntos: <span className="font-semibold ml-1 text-green-400">+{rewards.XP}</span>
+          XP: <span className="font-semibold ml-1 text-green-400">+{rewards.XP}</span>
           <Coins className="ml-3 mr-1.5 h-4 w-4 text-amber-500" />
-          Créditos: <span className="font-semibold ml-1 text-amber-400">+{rewards.COINS}</span>
+          Monedas: <span className="font-semibold ml-1 text-amber-400">+{rewards.COINS}</span>
         </div>
       </CardContent>
       <CardFooter className="p-4 bg-muted/20 flex justify-between items-center">
