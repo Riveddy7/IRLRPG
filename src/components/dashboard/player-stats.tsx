@@ -20,12 +20,12 @@ export function PlayerStats({ stats, statDescriptions }: PlayerStatsProps) {
   return (
     <Card className="shadow-lg rounded-lg bg-card/80 backdrop-blur-sm">
       <CardHeader className="p5-panel-header">
-        <CardTitle className="text-xl">Atributos Primordiales</CardTitle>
+        <CardTitle className="text-xl">Mis Habilidades</CardTitle>
       </CardHeader>
       <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
         {statEntries.length === 0 && (
           <p className="text-muted-foreground col-span-full text-center">
-            Los atributos aún no han sido revelados. ¡Completa tu iniciación!
+            Tus habilidades aún no se han definido. ¡Completa el cuestionario inicial!
           </p>
         )}
         <TooltipProvider>
@@ -43,12 +43,12 @@ export function PlayerStats({ stats, statDescriptions }: PlayerStatsProps) {
             if (currentSkillLevel >= MAX_SKILL_LEVEL) {
               xpInCurrentLevelView = XP_PER_SKILL_LEVEL; // Show full for max level
               skillProgressPercentage = 100;
-              xpDisplayString = `${totalSkillXp} XP (MAX)`;
+              xpDisplayString = `${totalSkillXp} Puntos (MAX)`;
             } else {
               // XP relative to the start of the current level
               xpInCurrentLevelView = totalSkillXp - ((currentSkillLevel - 1) * XP_PER_SKILL_LEVEL);
               skillProgressPercentage = (xpInCurrentLevelView / XP_PER_SKILL_LEVEL) * 100;
-              xpDisplayString = `${xpInCurrentLevelView} / ${XP_PER_SKILL_LEVEL} XP`;
+              xpDisplayString = `${xpInCurrentLevelView} / ${XP_PER_SKILL_LEVEL} Puntos`;
             }
             
 
@@ -60,7 +60,7 @@ export function PlayerStats({ stats, statDescriptions }: PlayerStatsProps) {
                       <Icon className="h-8 w-8 text-primary" />
                       <div>
                         <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{statName}</p>
-                        <p className="p5-stat-value">Nivel {currentSkillLevel}</p>
+                        <p className="p5-stat-value">Etapa {currentSkillLevel}</p>
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -71,7 +71,7 @@ export function PlayerStats({ stats, statDescriptions }: PlayerStatsProps) {
                 </TooltipTrigger>
                 {description && (
                   <TooltipContent side="top" className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-lg">
-                    <p className="text-sm font-semibold text-primary">{statName} - Nivel {currentSkillLevel}</p>
+                    <p className="text-sm font-semibold text-primary">{statName} - Etapa {currentSkillLevel}</p>
                     <p className="text-sm">{description}</p>
                   </TooltipContent>
                 )}
