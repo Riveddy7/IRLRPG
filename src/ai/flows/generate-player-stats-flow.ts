@@ -10,7 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod'; // Import Zod directly
-import { GENERAL_SKILLS } from '@/types/firestore-schemas';
 
 // Define Schemas internally - DO NOT EXPORT THESE CONSTANTS
 const StatDetailSchema = z.object({
@@ -29,7 +28,6 @@ const GeneratePlayerStatsInputSchema = z.object({
 const GeneratePlayerStatsOutputSchema = z.object({
   characterPreamble: z.string().describe('Una breve descripción del personaje en tono de videojuego, basada en sus aspiraciones y los stats generados.'),
   stats: z.array(StatDetailSchema).length(5).describe('Un array de exactamente 5 atributos generados.'),
-  suggestedGeneralSkillId: z.string().describe('The ID of the most relevant general skill from a predefined list, based on the user\'s aspirations.'),
 });
 
 // Export Types
@@ -54,10 +52,9 @@ Por favor, haz lo siguiente:
 2. Genera EXACTAMENTE 5 atributos (stats) únicos y relevantes para su aventura. Cada atributo debe tener:
     - Un nombre conciso y poderoso (máximo 2 palabras, ej: "Corazón Valiente", "Mente Estratégica", "Alma Persistente").
     - Una breve descripción (1 frase concisa) que explique qué representa ese atributo.
-3. Adicionalmente, identifica cuál de las siguientes áreas generales de habilidad es la más relevante para que el jugador se enfoque inicialmente, basándote en sus aspiraciones. Devuelve únicamente el ID de esta habilidad. Las IDs válidas para las habilidades generales son: ${GENERAL_SKILLS.map(skill => skill.id).join(', ')}. Este ID debe ser uno de esta lista.
 
 Asegúrate que los nombres de los atributos sean distintos entre sí.
-Devuelve la descripción del personaje, los 5 atributos y el 'suggestedGeneralSkillId'.`,
+Devuelve la descripción del personaje y los 5 atributos.`,
   config: {
     // temperature: 0.7, 
   }

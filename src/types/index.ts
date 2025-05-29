@@ -20,7 +20,6 @@ export interface Player {
   improvementAreas?: string;
   statDescriptions?: { [key: string]: string };
   hasCompletedQuiz: boolean;
-  suggestedGeneralSkillId?: string;
 }
 
 export type TaskStatus = 'To Do' | 'In Progress' | 'Done';
