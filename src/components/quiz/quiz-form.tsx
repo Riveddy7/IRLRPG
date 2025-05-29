@@ -127,7 +127,6 @@ export function QuizForm() {
       improvementAreas: data.improvementAreas,
       stats: initialPlayerStats, 
       statDescriptions: newStatDescriptions,
-      suggestedGeneralSkillId: generatedAIData.suggestedGeneralSkillId, // Added this line
     };
     
     await updatePlayerProfileAfterQuiz(profileUpdate);
