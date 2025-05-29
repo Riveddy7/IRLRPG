@@ -28,6 +28,8 @@ import {
   Timestamp,
   writeBatch,
   orderBy,
+  where,
+  limit,
 } from 'firebase/firestore';
 import { useAuth } from './use-auth';
 import { format, startOfDay, subDays, isEqual } from 'date-fns'; // Added subDays, isEqual
@@ -97,7 +99,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       setPlayer(null);
     });
 
-    const tasksQuery = query(collection(db, 'players', userId, 'tasks'), orderBy('createdAt', 'desc'));
+    const tasksQuery = query(collection(db, 'players', userId, 'tasks'), where('status', 'in', ['To Do', 'In Progress']), orderBy('createdAt', 'desc'), limit(50));
     const unsubscribeTasks = onSnapshot(tasksQuery, (querySnapshot) => {
       const tasksData = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -111,7 +113,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       setTasks(tasksData);
     }, (error) => console.error(`Error fetching tasks for UID ${userId}:`, error));
 
-    const habitsQuery = query(collection(db, 'players', userId, 'habits'), orderBy('createdAt', 'desc'));
+    const habitsQuery = query(collection(db, 'players', userId, 'habits'), orderBy('createdAt', 'desc'), limit(50));
     const unsubscribeHabits = onSnapshot(habitsQuery, (querySnapshot) => {
       const habitsData = querySnapshot.docs.map(docSnap => { // Renamed to docSnap to avoid conflict
         const data = docSnap.data();
@@ -141,7 +143,7 @@ export const LifeQuestProvider = ({ children }: { children: ReactNode }) => {
       setHabits(habitsData);
     }, (error) => console.error(`Error fetching habits for UID ${userId}:`, error));
 
-    const rewardsQuery = query(collection(db, 'players', userId, 'rewards'), orderBy('createdAt', 'desc'));
+    const rewardsQuery = query(collection(db, 'players', userId, 'rewards'), orderBy('createdAt', 'desc'), limit(50));
     const unsubscribeRewards = onSnapshot(rewardsQuery, (querySnapshot) => {
       const rewardsData = querySnapshot.docs.map(doc => { // Renamed to avoid conflict
         const data = doc.data();
