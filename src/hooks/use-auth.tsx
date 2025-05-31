@@ -15,7 +15,7 @@ import { doc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
 import type { Player } from '@/types'; 
 import { useToast } from './use-toast';
 import { useRouter } from 'next/navigation';
-import { defaultAvatarKey } from '@/config/avatar-config'; // Import default avatar key
+import { defaultAvatarKey } from '@/config/avatar-config'; 
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -49,14 +49,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const playerDocSnap = await getDoc(playerDocRef);
     if (playerDocSnap.exists()) {
-      console.log(`Player document for UID ${userId} already exists. Skipping creation.`);
+      console.log(`Documento de jugador para UID ${userId} ya existe. Omitiendo creación.`);
       return;
     }
 
     const newPlayerProfile: Player = {
       id: userId,
-      name: email?.split('@')[0] || 'Novato', 
-      genderAvatarKey: defaultAvatarKey, // Use default avatar key
+      name: email?.split('@')[0] || 'Principiante', 
+      genderAvatarKey: defaultAvatarKey, 
       level: 1,
       xp: 0,
       coins: 0,
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await setDoc(playerDocRef, newPlayerProfile);
     } catch (e) {
-      console.error("Error creating initial player document:", e);
+      console.error("Error creando documento inicial del jugador:", e);
       toast({ title: "Error de Configuración de Perfil", description: "No se pudo crear el perfil inicial del jugador.", variant: "destructive" });
       throw e; 
     }
@@ -81,11 +81,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       await createNewPlayerDocument(userCredential.user.uid, userCredential.user.email);
-      toast({ title: '¡Registro Exitoso!', description: 'Ahora personaliza tu aventura.' });
+      toast({ title: '¡Registro Exitoso!', description: 'Ahora personaliza tu perfil.' });
       router.push('/dashboard'); 
       return userCredential;
     } catch (e: any) {
-      console.error("Registration error:", e);
+      console.error("Error de registro:", e);
       setError(e.message || 'Falló el registro. Intenta de nuevo.');
       toast({ title: 'Falló el Registro', description: e.message || 'Verifica tus datos e intenta de nuevo.', variant: 'destructive' });
       setIsLoading(false);
@@ -98,13 +98,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
-      toast({ title: '¡Login Exitoso!', description: '¡Bienvenido de vuelta!' });
+      toast({ title: '¡Inicio de Sesión Exitoso!', description: '¡Bienvenido/a de vuelta!' });
       router.push('/dashboard');
       return userCredential;
     } catch (e: any) {
-      console.error("Login error:", e);
-      setError(e.message || 'Falló el login. Verifica tus credenciales.');
-      toast({ title: 'Falló el Login', description: e.message || 'Email o contraseña incorrectos.', variant: 'destructive' });
+      console.error("Error de inicio de sesión:", e);
+      setError(e.message || 'Falló el inicio de sesión. Verifica tus credenciales.');
+      toast({ title: 'Falló el Inicio de Sesión', description: e.message || 'Email o contraseña incorrectos.', variant: 'destructive' });
       setIsLoading(false);
       return null;
     }
@@ -115,12 +115,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await signOut(auth);
       setUser(null); 
-      toast({ title: 'Sesión Cerrada', description: '¡Hasta la próxima aventura!' });
+      toast({ title: 'Sesión Cerrada', description: '¡Hasta la próxima!' });
       router.push('/login'); 
     } catch (e: any) {
-      console.error("Logout error:", e);
-      setError(e.message || 'Falló el logout.');
-      toast({ title: 'Falló el Logout', description: e.message, variant: 'destructive' });
+      console.error("Error al cerrar sesión:", e);
+      setError(e.message || 'Falló el cierre de sesión.');
+      toast({ title: 'Falló el Cierre de Sesión', description: e.message, variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
 };

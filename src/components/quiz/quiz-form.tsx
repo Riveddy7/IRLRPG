@@ -28,10 +28,10 @@ import { avatarOptions } from '@/config/avatar-config';
 import { cn } from '@/lib/utils';
 
 const quizFormSchema = z.object({
-  nickname: z.string().min(3, "Tu nombre de héroe debe tener al menos 3 letras.").max(50, "Nombre demasiado largo."),
+  nickname: z.string().min(3, "Tu nombre de usuario debe tener al menos 3 letras.").max(50, "Nombre demasiado largo."),
   age: z.coerce.number().min(1, "Debes indicar tu edad.").max(150, "Edad un poco... ¿extrema?"),
   genderAvatarKey: z.string().min(1, "Debes elegir un avatar."),
-  improvementAreas: z.string().min(20, "¡Cuéntanos más! Unas 20 letras al menos.").max(1000, "Concreto y al grano, por favor."),
+  improvementAreas: z.string().min(20, "¡Cuéntanos más! Al menos 20 caracteres.").max(1000, "Sé concreto y al grano, por favor."),
 });
 
 type QuizFormValues = z.infer<typeof quizFormSchema>;
@@ -51,7 +51,7 @@ export function QuizForm() {
     defaultValues: {
       nickname: player?.name && player.name !== "Novato" ? player.name : "",
       age: player?.age || undefined,
-      genderAvatarKey: player?.genderAvatarKey || avatarOptions[0].key, // Default to first avatar's key
+      genderAvatarKey: player?.genderAvatarKey || avatarOptions[0].key, 
       improvementAreas: player?.improvementAreas || "",
     },
   });
@@ -70,7 +70,6 @@ export function QuizForm() {
         setCurrentAvatarIndex(initialIndex);
       }
     } else if (avatarOptions.length > 0) {
-      // Set initial form value if not already set and options are available
       form.setValue("genderAvatarKey", avatarOptions[0].key);
       setCurrentAvatarIndex(0);
     }
@@ -91,10 +90,10 @@ export function QuizForm() {
       const result = await generatePlayerStats(input);
       setGeneratedAIData(result);
     } catch (error: any) {
-      console.error("Error generando stats AI:", error);
-      let message = "El Oráculo está meditando o hubo un error al procesar tu petición. Intenta de nuevo en un momento.";
-      if (error.message?.includes("La IA no pudo generar los atributos del jugador según el formato esperado.")) {
-        message = "La IA no pudo generar los atributos del jugador según el formato esperado. Revisa la consola para más detalles.";
+      console.error("Error generando atributos con IA:", error);
+      let message = "La IA está meditando o hubo un error al procesar tu petición. Intenta de nuevo en un momento.";
+      if (error.message?.includes("La IA no pudo generar los atributos según el formato esperado.")) {
+        message = "La IA no pudo generar los atributos según el formato esperado. Revisa la consola para más detalles.";
       } else if (error.message) {
         message = error.message;
       }
@@ -107,7 +106,7 @@ export function QuizForm() {
 
   async function onSubmit(data: QuizFormValues) {
     if (!generatedAIData) {
-      setAiError("Primero debes generar tus atributos con la ayuda del Oráculo.");
+      setAiError("Primero debes generar tus atributos con la ayuda de la IA.");
       return;
     }
     setIsSubmitting(true);
@@ -127,6 +126,7 @@ export function QuizForm() {
       improvementAreas: data.improvementAreas,
       stats: initialPlayerStats, 
       statDescriptions: newStatDescriptions,
+      characterPreamble: generatedAIData.characterPreamble,
     };
     
     await updatePlayerProfileAfterQuiz(profileUpdate);
@@ -151,7 +151,7 @@ export function QuizForm() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-lg text-muted-foreground">Consultando los anales...</p>
+        <p className="mt-4 text-lg text-muted-foreground">Consultando datos...</p>
       </div>
     );
   }
@@ -159,8 +159,8 @@ export function QuizForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto bg-card/80 backdrop-blur-sm shadow-2xl border-primary/50">
       <CardHeader className="text-center">
-        <CardTitle className="text-3xl p5-text-shadow flex items-center justify-center"><UserCheck className="mr-3 h-8 w-8" /> Forja tu Leyenda</CardTitle>
-        <CardDescription>El primer paso en tu gran aventura. Define quién eres y qué aspiras a ser.</CardDescription>
+        <CardTitle className="text-3xl p5-text-shadow flex items-center justify-center"><UserCheck className="mr-3 h-8 w-8" /> Define tu Perfil</CardTitle>
+        <CardDescription>El primer paso en tu desarrollo personal. Define quién eres y qué aspiras a ser.</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -170,11 +170,11 @@ export function QuizForm() {
               name="nickname"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg">Nombre de Héroe</FormLabel>
+                  <FormLabel className="text-lg">Nombre de Usuario</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ej: 'El Intrépido'" {...field} className="text-base" />
+                    <Input placeholder="Ej: 'El Estratega'" {...field} className="text-base" />
                   </FormControl>
-                  <FormDescription>Así te conocerán en estas tierras.</FormDescription>
+                  <FormDescription>Así te identificarás en la aplicación.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -184,7 +184,7 @@ export function QuizForm() {
               name="age"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg">Edad de Aventurero</FormLabel>
+                  <FormLabel className="text-lg">Tu Edad</FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="Ej: 25" {...field} className="text-base" />
                   </FormControl>
@@ -196,7 +196,7 @@ export function QuizForm() {
             <FormField
               control={form.control}
               name="genderAvatarKey"
-              render={({ field }) => ( // field is implicitly used by form.setValue
+              render={({ field }) => ( 
                 <FormItem className="space-y-3">
                   <FormLabel className="text-lg text-center block">Elige tu avatar</FormLabel>
                   <FormControl>
@@ -208,14 +208,14 @@ export function QuizForm() {
                       <div className="relative w-52 h-96 sm:w-60 sm:h-[340px] overflow-hidden rounded-lg shadow-lg border-2 border-primary bg-muted/30 flex items-center justify-center">
                         {avatarOptions.length > 0 && (
                           <Image
-                            key={avatarOptions[currentAvatarIndex].key} // Add key for re-renders
+                            key={avatarOptions[currentAvatarIndex].key} 
                             src={avatarOptions[currentAvatarIndex].fullBodySrc}
                             alt={avatarOptions[currentAvatarIndex].alt}
-                            width={270} // Original width for 9:16
-                            height={480} // Original height for 9:16
-                            className="object-contain h-full w-auto animate-idle-bob" // Use object-contain to see full image
+                            width={270} 
+                            height={480} 
+                            className="object-contain h-full w-auto animate-idle-bob" 
                             data-ai-hint={avatarOptions[currentAvatarIndex].fullBodyDataAiHint}
-                            priority // Preload the current avatar image
+                            priority 
                           />
                         )}
                       </div>
@@ -225,9 +225,6 @@ export function QuizForm() {
                       </Button>
                     </div>
                   </FormControl>
-                  {avatarOptions.length > 0 && (
-                     <p className="text-center text-muted-foreground font-medium">{avatarOptions[currentAvatarIndex].alt}</p>
-                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -238,16 +235,16 @@ export function QuizForm() {
               name="improvementAreas"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg">Tu Manifiesto Interior</FormLabel>
+                  <FormLabel className="text-lg">Describe tus Aspiraciones</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Describe las áreas de tu vida que anhelas transformar, tus metas, tus sueños más profundos... (Ej: 'Quiero ser más disciplinado con mis estudios, mejorar mi condición física y aprender a ser un líder más efectivo.')"
+                      placeholder="Ej: Mejorar mi condición física haciendo ejercicio 3 veces por semana y comiendo más sano; avanzar en mi carrera aprendiendo una nueva habilidad; dedicar más tiempo a mis pasatiempos como la pintura o la música."
                       {...field}
                       rows={5}
                       className="text-base"
                     />
                   </FormControl>
-                  <FormDescription>El Oráculo usará estas palabras para revelar tus talentos innatos.</FormDescription>
+                  <FormDescription>Describe tus principales metas y las áreas de tu vida que quieres mejorar. Basado en esto, la IA generará 5 atributos personalizados para tu desarrollo.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -256,7 +253,7 @@ export function QuizForm() {
             {!generatedAIData && (
               <Button type="button" onClick={handleGenerateStats} disabled={isGeneratingStats} className="w-full p5-button-accent py-6 text-lg">
                 {isGeneratingStats ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Sparkles className="mr-2 h-6 w-6" />}
-                {isGeneratingStats ? "El Oráculo está deliberando..." : "Consultar al Oráculo (Generar Atributos)"}
+                {isGeneratingStats ? "IA generando atributos..." : "Generar Atributos con IA"}
               </Button>
             )}
 
@@ -265,11 +262,11 @@ export function QuizForm() {
             {generatedAIData && (
               <Card className="mt-6 bg-primary/5 border-primary/30">
                 <CardHeader className="p5-panel-header items-center !pb-3">
-                  <CardTitle className="text-xl flex items-center"><Dices className="mr-2"/> ¡Tu Destino se Manifiesta!</CardTitle>
+                  <CardTitle className="text-xl flex items-center"><Dices className="mr-2"/> ¡Atributos Generados!</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
                   <p className="text-muted-foreground italic text-center">"{generatedAIData.characterPreamble}"</p>
-                  <h4 className="font-semibold text-lg text-center pt-2">Tus Atributos Primordiales:</h4>
+                  <h4 className="font-semibold text-lg text-center pt-2">Tus Atributos Clave:</h4>
                   <ul className="space-y-2">
                     {generatedAIData.stats.map(stat => (
                       <li key={stat.name} className="p-2 bg-card/50 rounded-md shadow-sm">
@@ -277,7 +274,7 @@ export function QuizForm() {
                       </li>
                     ))}
                   </ul>
-                  <p className="text-xs text-muted-foreground text-center pt-2">Estos 5 atributos formarán el núcleo de tu ser. Cada uno comenzará en Nivel 1, XP 0.</p>
+                  <p className="text-xs text-muted-foreground text-center pt-2">Estos 5 atributos formarán el núcleo de tu desarrollo. Cada uno comenzará en Nivel 1, XP 0.</p>
                 </CardContent>
               </Card>
             )}
@@ -285,7 +282,7 @@ export function QuizForm() {
           <CardFooter>
             <Button type="submit" className="w-full p5-button-primary py-6 text-xl" disabled={!generatedAIData || isSubmitting || isGeneratingStats}>
               {isSubmitting ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <BookOpen className="mr-2 h-6 w-6" />}
-              {isSubmitting ? "Forjando tu Destino..." : "¡Empezar Aventura!"}
+              {isSubmitting ? "Guardando Perfil..." : "¡Comenzar Aventura!"}
             </Button>
           </CardFooter>
         </form>

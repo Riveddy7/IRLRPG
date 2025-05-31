@@ -20,11 +20,11 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const registerFormSchema = z.object({
-  email: z.string().email("Invalid email address.").min(1, "Email is required."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters."),
+  email: z.string().email("Dirección de email inválida.").min(1, "El email es requerido."),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
+  confirmPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Las contraseñas no coinciden",
   path: ["confirmPassword"], // path of error
 });
 
@@ -49,8 +49,8 @@ export function RegisterForm() {
   return (
     <Card className="w-full bg-card/80 backdrop-blur-sm shadow-2xl border-primary/50">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl p5-text-shadow">Join the Phantom Thieves!</CardTitle>
-        <CardDescription>Create your account to start gamifying your life.</CardDescription>
+        <CardTitle className="text-2xl p5-text-shadow">Únete a la Aventura</CardTitle>
+        <CardDescription>Crea tu cuenta para empezar a gamificar tu vida.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -62,7 +62,7 @@ export function RegisterForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="you@example.com" {...field} />
+                    <Input type="email" placeholder="tu@ejemplo.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -73,9 +73,9 @@ export function RegisterForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="•••••••• (min. 6 characters)" {...field} />
+                    <Input type="password" placeholder="•••••••• (mín. 6 caracteres)" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -86,7 +86,7 @@ export function RegisterForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
+                  <FormLabel>Confirmar Contraseña</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -97,16 +97,16 @@ export function RegisterForm() {
             {error && <p className="text-sm text-destructive text-center">{error}</p>}
             <Button type="submit" className="w-full p5-button-accent" disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Create Account
+              Crear Cuenta
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter className="flex flex-col items-center space-y-2">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
+          ¿Ya tienes una cuenta?{" "}
           <Button variant="link" className="p-0 h-auto text-accent hover:text-accent/80" asChild>
-            <Link href="/login">Sign in here</Link>
+            <Link href="/login">Inicia sesión aquí</Link>
           </Button>
         </p>
       </CardFooter>

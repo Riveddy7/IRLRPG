@@ -66,33 +66,33 @@ export default function TasksPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight p5-text-shadow">Your Missions</h1>
+        <h1 className="text-3xl font-bold tracking-tight p5-text-shadow">Tus Objetivos</h1>
         <Button onClick={() => handleOpenForm()} className="p5-button-accent w-full sm:w-auto">
-          <PlusCircle className="mr-2 h-5 w-5" /> New Mission
+          <PlusCircle className="mr-2 h-5 w-5" /> Nuevo Objetivo
         </Button>
       </div>
 
       <Tabs value={filterStatus} onValueChange={(value) => setFilterStatus(value as TaskFilterStatus)}>
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto sm:h-10">
-          <TabsTrigger value="All">All</TabsTrigger>
-          <TabsTrigger value="To Do">To Do</TabsTrigger>
-          <TabsTrigger value="In Progress">In Progress</TabsTrigger>
-          <TabsTrigger value="Done">Done</TabsTrigger>
+          <TabsTrigger value="All">Todos</TabsTrigger>
+          <TabsTrigger value="To Do">Pendiente</TabsTrigger>
+          <TabsTrigger value="In Progress">En Progreso</TabsTrigger>
+          <TabsTrigger value="Done">Completado</TabsTrigger>
         </TabsList>
       </Tabs>
 
       {filteredTasks.length === 0 ? (
         <div className="text-center py-12 bg-card/50 rounded-lg shadow">
           <AlertTriangle className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-          <h3 className="mt-4 text-xl font-semibold text-muted-foreground">No Missions Here</h3>
+          <h3 className="mt-4 text-xl font-semibold text-muted-foreground">Sin Objetivos Aquí</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             {filterStatus === "All" 
-              ? "Looks like your mission log is empty. Time to find some quests!" 
-              : `No missions currently marked as "${filterStatus}".`}
+              ? "Tu lista de objetivos está vacía. ¡Es hora de definir algunos!" 
+              : `No hay objetivos marcados como "${filterStatus}".`}
           </p>
           {filterStatus === "All" && (
             <Button onClick={() => handleOpenForm()} className="mt-6 p5-button-primary">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add First Mission
+              <PlusCircle className="mr-2 h-4 w-4" /> Añadir Primer Objetivo
             </Button>
           )}
         </div>
@@ -107,16 +107,16 @@ export default function TasksPage() {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-lg bg-card max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl p5-text-shadow">{editingTask ? 'Edit Mission' : 'Add New Mission'}</DialogTitle>
+            <DialogTitle className="text-2xl p5-text-shadow">{editingTask ? 'Editar Objetivo' : 'Añadir Nuevo Objetivo'}</DialogTitle>
             <DialogDescription>
-              {editingTask ? 'Update the details of this ongoing mission.' : 'Define your next objective.'}
+              {editingTask ? 'Actualiza los detalles de este objetivo.' : 'Define tu próximo desafío.'}
             </DialogDescription>
           </DialogHeader>
           <TaskForm
             task={editingTask}
             onSubmit={handleSubmitForm}
             onCancel={handleCloseForm}
-            submitButtonText={editingTask ? 'Update Mission' : 'Launch Mission'}
+            submitButtonText={editingTask ? 'Actualizar Objetivo' : 'Crear Objetivo'}
           />
         </DialogContent>
       </Dialog>

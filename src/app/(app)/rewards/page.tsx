@@ -25,7 +25,7 @@ export default function RewardsPage() {
     setIsFormOpen(false);
   };
 
-  const handleSubmitForm = (data: any) => { // data type from RewardFormValues
+  const handleSubmitForm = (data: any) => { 
     if (editingReward) {
       updateReward(editingReward.id, data);
     } else {

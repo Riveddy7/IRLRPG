@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { LifeQuestProvider } from '@/hooks/use-life-quest-store';
-import { AuthProvider } from '@/hooks/use-auth'; // Import AuthProvider
+import { AuthProvider } from '@/hooks/use-auth'; 
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -17,12 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'LifeQuest RPG',
-  description: 'Gamify your life with LifeQuest RPG!',
-  manifest: '/manifest.json', // Link to the manifest file
-  themeColor: '#E53935', // Corresponds to manifest theme_color
+  title: 'LifeQuest: Gamifica Tu Vida',
+  description: '¡Gamifica tu vida y alcanza tus metas con LifeQuest!',
+  manifest: '/manifest.json', 
+  themeColor: '#E53935', 
   icons: {
-    apple: 'https://placehold.co/180x180.png?text=LQApple', // Placeholder Apple touch icon
+    apple: 'https://placehold.co/180x180.png?text=LQApple', 
   },
 };
 
@@ -32,10 +32,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
-      {/* The <head> tag is now managed by Next.js via the metadata object */}
+    <html lang="es" className="dark" style={{ colorScheme: 'dark' }}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans overflow-x-hidden`}>
-        <AuthProvider> {/* Wrap with AuthProvider */}
+        <AuthProvider> 
           <LifeQuestProvider>
             {children}
             <Toaster />
