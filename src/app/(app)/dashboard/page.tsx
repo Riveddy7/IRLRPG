@@ -20,8 +20,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (player?.genderAvatarKey) {
       const details = getAvatarDetails(player.genderAvatarKey);
-      setAvatarDetails(details); 
-      setFullBodyAvatarDetails(details); 
+      setAvatarDetails(details);
+      setFullBodyAvatarDetails(details);
     }
   }, [player?.genderAvatarKey]);
 
@@ -33,15 +33,16 @@ export default function DashboardPage() {
       <div className="space-y-6">
         {/* Skeleton for Mobile Top Section */}
         <div className="md:hidden space-y-4">
-          <div className="flex items-center gap-x-3 sm:gap-x-4">
-            <div className="w-1/2">
-              <Skeleton className="aspect-square w-24 h-24 sm:w-28 sm:h-28 rounded-lg" />
+          <div className="flex items-center gap-x-4">
+            <div className="flex-shrink-0">
+              <Skeleton className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg" />
             </div>
-            <div className="w-1/2">
-              <Skeleton className="h-7 w-3/4" /> {/* Nickname */}
+            <div className="flex-grow space-y-2">
+              <Skeleton className="h-8 w-3/4" /> {/* Nickname */}
+              <Skeleton className="h-6 w-1/2" /> {/* Level */}
             </div>
           </div>
-          <div className="mt-3 sm:mt-4">
+          <div>
             <Skeleton className="h-8 w-full" /> {/* XP Progress placeholder */}
           </div>
         </div>
@@ -55,7 +56,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Skeleton for Content Below Top Section */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-start"> {/* Changed items-center to items-start */}
            {/* Mobile: Skills List Skeleton */}
           <div className="md:hidden col-span-1">
             <Skeleton className="h-72 w-full rounded-lg" />
@@ -91,11 +92,11 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8"> {/* Increased general spacing */}
       {/* Mobile-specific Top Section */}
-      <div className="md:hidden space-y-3"> 
-        <div className="flex items-center gap-x-3 sm:gap-x-4">
-          <div className="w-1/2">
+      <div className="md:hidden space-y-4">
+        <div className="flex items-center gap-x-4">
+          <div className="flex-shrink-0">
             {avatarDetails ? (
-              <div className="aspect-square w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-lg overflow-hidden border-2 border-accent relative animate-idle-bob shadow-md">
+              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg overflow-hidden border-2 border-accent relative animate-idle-bob shadow-lg">
                 <Image
                   src={avatarDetails.src}
                   alt={avatarDetails.alt}
@@ -106,15 +107,15 @@ export default function DashboardPage() {
                 />
               </div>
             ) : (
-              <Skeleton className="aspect-square w-24 h-24 sm:w-28 sm:h-28 rounded-lg" />
+              <Skeleton className="w-28 h-28 sm:w-32 sm:h-32 rounded-lg" />
             )}
           </div>
-          <div className="w-1/2 flex flex-col justify-center items-start">
-            <h2 className="text-lg sm:text-xl font-bold text-primary truncate" title={player.name}>
-              {player.name || <Skeleton className="h-7 w-24" />}
+          <div className="flex-grow flex flex-col justify-center min-w-0"> {/* min-w-0 helps with truncation */}
+            <h2 className="text-2xl sm:text-3xl font-bold text-primary truncate" title={player.name}>
+              {player.name || <Skeleton className="h-8 w-3/4" />}
             </h2>
-             <p className="text-xs sm:text-sm text-accent flex items-center">
-                <LevelIcon className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+             <p className="text-sm sm:text-base text-primary flex items-center"> {/* Changed text-accent to text-primary */}
+                <LevelIcon className="mr-1.5 h-4 w-4 sm:h-5 sm:w-5" /> {/* Slightly larger icon and margin */}
                 Nivel {player.level}
             </p>
           </div>
@@ -140,15 +141,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Desktop: Full Body Avatar and Radar Chart */}
-      <div className="hidden md:grid md:grid-cols-3 gap-8 items-center mt-6">
+      <div className="hidden md:grid md:grid-cols-3 gap-8 items-start mt-6"> {/* Changed items-center to items-start */}
           <div className="md:col-span-1 flex justify-center items-center md:h-96">
             {fullBodyAvatarDetails ? (
-              <div className="relative w-52 h-96 sm:w-60 md:w-auto md:h-full max-h-[480px]">
+              <div className="relative w-52 h-96 sm:w-60 md:w-auto md:h-full max-h-[480px]"> {/* md:h-full for better scaling */}
                 <Image
                   src={fullBodyAvatarDetails.fullBodySrc}
                   alt={`${player.name || 'Avatar'} - Cuerpo Completo`}
                   layout="fill"
-                  objectFit="contain"
+                  objectFit="contain" // Changed to contain
                   className="animate-idle-bob"
                   data-ai-hint={fullBodyAvatarDetails.fullBodyDataAiHint}
                   priority
