@@ -2,7 +2,7 @@
 "use client";
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
-import { AppBottomNav } from '@/components/layout/app-bottom-nav'; // Importar AppBottomNav
+import { AppBottomNav } from '@/components/layout/app-bottom-nav'; 
 import { useAuth } from '@/hooks/use-auth';
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
 import { useRouter, usePathname } from 'next/navigation';
@@ -41,8 +41,8 @@ export default function AppLayout({
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-        <p className="text-xl font-semibold">Cargando tu Legado...</p>
-        <p className="text-sm text-muted-foreground">Forjando tu destino...</p>
+        <p className="text-xl font-semibold">Cargando LifeQuest...</p>
+        <p className="text-sm text-muted-foreground">Preparando tu aventura...</p>
       </div>
     );
   }
@@ -51,8 +51,8 @@ export default function AppLayout({
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
         <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-        <p className="text-xl font-semibold">Preparando tu Iniciación...</p>
-        <p className="text-sm text-muted-foreground">Serás redirigido al ritual de personalización.</p>
+        <p className="text-xl font-semibold">Preparando tu Configuración Inicial...</p>
+        <p className="text-sm text-muted-foreground">Serás redirigido para personalizar tu perfil.</p>
       </div>
     );
   }
@@ -61,14 +61,14 @@ export default function AppLayout({
     <div className="min-h-screen flex flex-col bg-background">
       <AppHeader />
       <div className="flex flex-1">
-        <AppSidebar /> {/* Se oculta en móvil por sus propias clases 'hidden md:flex' */}
-        <main className="flex-1 p-6 pb-20 md:pb-6 overflow-y-auto"> {/* Padding inferior para la barra en móvil */}
+        <AppSidebar /> 
+        <main className="flex-1 p-6 pb-20 md:pb-6 overflow-y-auto"> 
           <div className="container mx-auto max-w-7xl">
              {children}
           </div>
         </main>
       </div>
-      <AppBottomNav /> {/* Se muestra solo en móvil por sus clases 'md:hidden' */}
+      <AppBottomNav /> 
     </div>
   );
 }

@@ -17,8 +17,9 @@ export interface Player {
   coins: number;
   stats: PlayerStats;
   age?: number;
-  improvementAreas?: string;
-  statDescriptions?: { [key: string]: string };
+  improvementAreas?: string; // Aspiraciones del usuario
+  statDescriptions?: { [key: string]: string }; // Descripciones de los atributos generados por IA
+  characterPreamble?: string; // Introducción generada por IA en el quiz
   hasCompletedQuiz: boolean;
 }
 
@@ -34,7 +35,7 @@ export interface Task {
   dueDate?: string; // ISO string
   priority: TaskPriority;
   difficulty: Difficulty;
-  targetStat?: string;
+  targetStat?: string; // Atributo que mejora
   createdAt: string; // ISO string
 }
 
@@ -47,7 +48,7 @@ export interface Habit {
   description?: string;
   type: HabitType;
   frequency: HabitFrequency;
-  targetStat?: string;
+  targetStat?: string; // Atributo que mejora
   difficulty: Difficulty;
   currentStreak: number;
   longestStreak: number;
@@ -60,6 +61,6 @@ export interface RewardItem {
   title: string;
   description?: string;
   cost: number;
-  icon?: string; // For future use, e.g., a Lucide icon name
+  icon?: string; 
   createdAt: string; // ISO string
 }

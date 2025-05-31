@@ -2,9 +2,9 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { PlayerAvatar } from '@/components/dashboard/player-avatar'; 
-import { PlayerStatsRadarChart } from '@/components/dashboard/player-stats-radar-chart';
-import { PlayerStats } from '@/components/dashboard/player-stats';
+import { PlayerAvatar } from '@/components/dashboard/player-avatar'; // Used for Desktop and Full Body (if kept)
+import { PlayerStatsRadarChart } from '@/components/dashboard/player-stats-radar-chart'; // Desktop only
+import { PlayerStats } from '@/components/dashboard/player-stats'; // Mobile list view
 import { XPProgress } from '@/components/dashboard/xp-progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLifeQuest } from '@/hooks/use-life-quest-store';
@@ -20,8 +20,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (player?.genderAvatarKey) {
       const details = getAvatarDetails(player.genderAvatarKey);
-      setAvatarDetails(details); // For headshot
-      setFullBodyAvatarDetails(details); // For full body
+      setAvatarDetails(details); 
+      setFullBodyAvatarDetails(details); 
     }
   }, [player?.genderAvatarKey]);
 
@@ -54,7 +54,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Skeleton for Full Body Avatar and Radar Chart OR Skills List */}
+        {/* Skeleton for Content Below Top Section */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
            {/* Mobile: Skills List Skeleton */}
           <div className="md:hidden col-span-1">
@@ -72,7 +72,7 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center">
         <AlertTriangle className="w-16 h-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-semibold mb-2">Error al Cargar Datos del Héroe</h2>
+        <h2 className="text-2xl font-semibold mb-2">Error al Cargar Datos del Perfil</h2>
         <p className="text-muted-foreground">No se pudo recuperar la información del jugador.</p>
       </div>
     );
@@ -82,8 +82,8 @@ export default function DashboardPage() {
      return (
       <div className="flex flex-col items-center justify-center h-full text-center">
         <AlertTriangle className="w-16 h-16 text-yellow-500 mb-4" />
-        <h2 className="text-2xl font-semibold mb-2">Iniciación Requerida</h2>
-        <p className="text-muted-foreground">Debes completar la forja de tu leyenda antes de acceder al dashboard.</p>
+        <h2 className="text-2xl font-semibold mb-2">Configuración Inicial Requerida</h2>
+        <p className="text-muted-foreground">Debes completar la configuración de tu perfil antes de acceder al panel.</p>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8"> {/* Increased general spacing */}
       {/* Mobile-specific Top Section */}
-      <div className="md:hidden space-y-3"> {/* Added space-y for elements within mobile view */}
+      <div className="md:hidden space-y-3"> 
         <div className="flex items-center gap-x-3 sm:gap-x-4">
           <div className="w-1/2">
             {avatarDetails ? (
@@ -119,7 +119,7 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
-        <div className="pt-1"> {/* Small top padding for XP bar */}
+        <div className="pt-1"> 
           <XPProgress currentXP={player.xp} currentLevel={player.level} />
         </div>
       </div>
@@ -127,7 +127,7 @@ export default function DashboardPage() {
       {/* Desktop-specific Top Section */}
       <div className="hidden md:grid md:grid-cols-3 gap-6 items-start">
         <div className="md:col-span-1">
-          <PlayerAvatar player={player} /> {/* PlayerAvatar includes name, avatar, and level */}
+          <PlayerAvatar player={player} /> 
         </div>
         <div className="md:col-span-2 space-y-6">
           <XPProgress currentXP={player.xp} currentLevel={player.level} />
@@ -146,7 +146,7 @@ export default function DashboardPage() {
               <div className="relative w-52 h-96 sm:w-60 md:w-auto md:h-full max-h-[480px]">
                 <Image
                   src={fullBodyAvatarDetails.fullBodySrc}
-                  alt={`${player.name} - Full Body`}
+                  alt={`${player.name || 'Avatar'} - Cuerpo Completo`}
                   layout="fill"
                   objectFit="contain"
                   className="animate-idle-bob"
@@ -164,7 +164,7 @@ export default function DashboardPage() {
             ) : (
               <Card className="p5-radar-chart-container">
                 <CardHeader className="p5-panel-header">
-                  <CardTitle>Atributos Primordiales</CardTitle>
+                  <CardTitle>Atributos Clave</CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-center h-48">
                   <p className="text-muted-foreground">Atributos no disponibles.</p>
@@ -173,6 +173,16 @@ export default function DashboardPage() {
             )}
           </div>
       </div>
+      {player.characterPreamble && (
+        <Card className="mt-6 bg-card/80 backdrop-blur-sm">
+            <CardHeader className="p5-panel-header">
+                <CardTitle className="text-lg">Tu Enfoque Personal</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground italic">"{player.characterPreamble}"</p>
+            </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

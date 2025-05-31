@@ -3,8 +3,8 @@ import { QuizForm } from '@/components/quiz/quiz-form';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Forja tu Leyenda - LifeQuest RPG',
-  description: 'Personaliza tu personaje y define tus atributos iniciales.',
+  title: 'Define tus Atributos - LifeQuest',
+  description: 'Personaliza tu perfil y define tus atributos iniciales con ayuda de la IA.',
 };
 
 export default function QuizPage() {

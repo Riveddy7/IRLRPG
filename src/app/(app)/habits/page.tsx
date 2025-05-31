@@ -81,7 +81,7 @@ export default function HabitsPage() {
     if (!player || !player.stats) return [];
     return Object.entries(player.stats).map(([name, data]) => ({
       name,
-      description: player.statDescriptions?.[name] || 'Skill sin descripción detallada.',
+      description: player.statDescriptions?.[name] || 'Atributo sin descripción detallada.',
       level: data.level,
     }));
   }, [player]);
@@ -94,7 +94,7 @@ export default function HabitsPage() {
 
     const skillData = playerSkills.find(s => s.name === selectedSkillForSuggestion);
     if (!skillData) {
-      setAiError("Skill seleccionada no encontrada.");
+      setAiError("Atributo seleccionado no encontrado.");
       setIsAiLoading(false);
       return;
     }
@@ -110,7 +110,7 @@ export default function HabitsPage() {
       setAiSuggestions(result.suggestions.map(s => ({ ...s, added: false })));
     } catch (error: any) {
       console.error("Error generando sugerencias IA:", error);
-      setAiError(error.message || "El Oráculo de Disciplinas está ocupado. Intenta más tarde.");
+      setAiError(error.message || "La IA de Disciplinas está ocupada. Intenta más tarde.");
     } finally {
       setIsAiLoading(false);
     }
@@ -130,7 +130,7 @@ export default function HabitsPage() {
     addHabit(newHabitData);
     toast({
         title: "Disciplina Añadida",
-        description: `"${suggestion.title}" ha sido forjada.`,
+        description: `"${suggestion.title}" ha sido establecida.`,
     });
     
     setAiSuggestions(prev => prev.map((s, i) => i === index ? { ...s, added: true } : s));
@@ -154,14 +154,14 @@ export default function HabitsPage() {
     <div className="space-y-6 p-0 sm:p-2 md:p-4">
       <div className="px-4 sm:px-0">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight p5-text-shadow">
-          Bienvenido/a, {player.name}!
+          ¡Bienvenido/a, {player.name}!
         </h1>
-        <p className="text-muted-foreground">Tu senda de la disciplina.</p>
+        <p className="text-muted-foreground">Tu camino de desarrollo personal.</p>
       </div>
 
       <div className="bg-card p-4 rounded-lg shadow space-y-3">
         <div className="flex justify-between items-center text-sm font-medium">
-          <span className="text-card-foreground">Progreso Disciplinas Diarias (Hoy)</span>
+          <span className="text-card-foreground">Progreso de Disciplinas Diarias (Hoy)</span>
           <span className="text-primary">{goodHabitsCompletedTodayCount} / {dailyGoodHabitsCount}</span>
         </div>
         <Progress value={progressPercentage} className="h-2.5 [&>div]:bg-gradient-to-r [&>div]:from-green-400 [&>div]:to-emerald-500" />
@@ -185,12 +185,12 @@ export default function HabitsPage() {
       {sortedHabits.length === 0 && !isSuggestDialogVisible ? (
          <div className="text-center py-10 px-4 bg-card/50 rounded-lg shadow">
           <CalendarDays className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-          <h3 className="mt-4 text-lg font-semibold text-muted-foreground">Forja tu Primera Disciplina</h3>
+          <h3 className="mt-4 text-lg font-semibold text-muted-foreground">Establece tu Primera Disciplina</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             El camino hacia la maestría comienza con un solo paso. Define tus hábitos.
           </p>
           <Button onClick={() => handleOpenForm()} className="mt-6 p5-button-primary">
-              <PlusCircle className="mr-2 h-4 w-4" /> Forjar Disciplina
+              <PlusCircle className="mr-2 h-4 w-4" /> Establecer Disciplina
           </Button>
         </div>
       ) : (
@@ -215,24 +215,24 @@ export default function HabitsPage() {
       <Button
         onClick={() => handleOpenForm()}
         className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 md:hidden z-30 p5-button-accent rounded-full h-14 w-14 shadow-xl"
-        aria-label="Forjar Nueva Disciplina"
+        aria-label="Establecer Nueva Disciplina"
       >
         <PlusCircle className="h-7 w-7" />
       </Button>
       <Button 
         onClick={() => handleOpenForm()} 
         className="hidden md:flex p5-button-accent fixed bottom-6 right-6 z-30 shadow-xl"
-        aria-label="Forjar Nueva Disciplina Desktop"
+        aria-label="Establecer Nueva Disciplina Escritorio"
       >
-        <PlusCircle className="mr-2 h-5 w-5" /> Forjar Disciplina
+        <PlusCircle className="mr-2 h-5 w-5" /> Establecer Disciplina
       </Button>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-lg bg-card max-h-[85vh] overflow-y-auto p-0">
           <DialogHeader className="p-6 pb-4">
-            <DialogTitle className="text-2xl p5-text-shadow">{editingHabit ? 'Refinar Disciplina' : 'Forjar Nueva Disciplina'}</DialogTitle>
+            <DialogTitle className="text-2xl p5-text-shadow">{editingHabit ? 'Refinar Disciplina' : 'Establecer Nueva Disciplina'}</DialogTitle>
             <DialogDescription>
-              {editingHabit ? 'Ajusta los parámetros de esta disciplina.' : 'Define un nuevo hábito a dominar.'}
+              {editingHabit ? 'Ajusta los parámetros de esta disciplina.' : 'Define un nuevo hábito a incorporar.'}
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-6">
@@ -240,7 +240,7 @@ export default function HabitsPage() {
               habit={editingHabit}
               onSubmit={handleSubmitForm}
               onCancel={handleCloseForm}
-              submitButtonText={editingHabit ? 'Actualizar Disciplina' : 'Forjar Disciplina'}
+              submitButtonText={editingHabit ? 'Actualizar Disciplina' : 'Establecer Disciplina'}
             />
           </div>
         </DialogContent>
@@ -256,15 +256,15 @@ export default function HabitsPage() {
         }}>
         <DialogContent className="sm:max-w-xl bg-card max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="p-6 pb-4">
-            <DialogTitle className="text-2xl p5-text-shadow flex items-center gap-2"><Sparkles className="text-yellow-400"/>Sugerencias del Oráculo</DialogTitle>
+            <DialogTitle className="text-2xl p5-text-shadow flex items-center gap-2"><Sparkles className="text-yellow-400"/>Sugerencias de la IA</DialogTitle>
             <DialogDescription>
-              Elige una de tus skills y el Oráculo te propondrá disciplinas para potenciarla.
+              Elige uno de tus atributos y la IA te propondrá disciplinas para potenciarlo.
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-6 space-y-6">
             <div className="space-y-2">
               <label htmlFor="skill-select-suggestion" className="text-sm font-medium text-card-foreground">
-                Skill a Mejorar:
+                Atributo a Mejorar:
               </label>
               <Select 
                 value={selectedSkillForSuggestion} 
@@ -272,14 +272,14 @@ export default function HabitsPage() {
                 disabled={isAiLoading}
               >
                 <SelectTrigger id="skill-select-suggestion" className="w-full">
-                  <SelectValue placeholder="Selecciona una skill..." />
+                  <SelectValue placeholder="Selecciona un atributo..." />
                 </SelectTrigger>
                 <SelectContent>
                   {playerSkills.length > 0 ? playerSkills.map(skill => (
                     <SelectItem key={skill.name} value={skill.name}>
                       {skill.name} (Nivel {skill.level})
                     </SelectItem>
-                  )) : <SelectItem value="no-skills" disabled>No tienes skills definidas.</SelectItem>}
+                  )) : <SelectItem value="no-skills" disabled>No tienes atributos definidos.</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
@@ -290,7 +290,7 @@ export default function HabitsPage() {
               className="w-full p5-button-primary"
             >
               {isAiLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isAiLoading ? "Consultando Oráculo..." : "Obtener Sugerencias"}
+              {isAiLoading ? "Consultando IA..." : "Obtener Sugerencias"}
             </Button>
 
             {aiError && (

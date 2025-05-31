@@ -22,8 +22,8 @@ export default function RootPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground">
       <Loader2 className="h-16 w-16 animate-spin text-primary mb-4" />
-      <p className="text-xl font-semibold">Loading LifeQuest RPG...</p>
-      <p className="text-sm text-muted-foreground">Preparing your adventure!</p>
+      <p className="text-xl font-semibold">Cargando LifeQuest...</p>
+      <p className="text-sm text-muted-foreground">Preparando tu aventura...</p>
     </div>
   );
 }

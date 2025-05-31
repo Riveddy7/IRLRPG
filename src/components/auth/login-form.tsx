@@ -20,8 +20,8 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const loginFormSchema = z.object({
-  email: z.string().email("Invalid email address.").min(1, "Email is required."),
-  password: z.string().min(6, "Password must be at least 6 characters.").min(1, "Password is required."),
+  email: z.string().email("Dirección de email inválida.").min(1, "El email es requerido."),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres.").min(1, "La contraseña es requerida."),
 });
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
@@ -44,8 +44,8 @@ export function LoginForm() {
   return (
     <Card className="w-full bg-card/80 backdrop-blur-sm shadow-2xl border-primary/50">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl p5-text-shadow">Welcome Back, Phantom!</CardTitle>
-        <CardDescription>Enter your credentials to continue your quest.</CardDescription>
+        <CardTitle className="text-2xl p5-text-shadow">¡Bienvenido de Nuevo!</CardTitle>
+        <CardDescription>Ingresa tus credenciales para continuar tu progreso.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -57,7 +57,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="you@example.com" {...field} />
+                    <Input type="email" placeholder="tu@ejemplo.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -68,7 +68,7 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Contraseña</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -79,16 +79,16 @@ export function LoginForm() {
             {error && <p className="text-sm text-destructive text-center">{error}</p>}
             <Button type="submit" className="w-full p5-button-primary" disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Sign In
+              Iniciar Sesión
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter className="flex flex-col items-center space-y-2">
         <p className="text-sm text-muted-foreground">
-          New to the Metaverse?{" "}
+          ¿Nuevo por aquí?{" "}
           <Button variant="link" className="p-0 h-auto text-accent hover:text-accent/80" asChild>
-            <Link href="/register">Register here</Link>
+            <Link href="/register">Regístrate aquí</Link>
           </Button>
         </p>
       </CardFooter>
