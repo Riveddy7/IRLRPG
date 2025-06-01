@@ -17,12 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'LifeQuest: Gamifica Tu Vida',
-  description: '¡Gamifica tu vida y alcanza tus metas con LifeQuest!',
+  title: 'RPLife: Gamifica Tu Vida',
+  description: '¡Gamifica tu vida y alcanza tus metas con RPLife!',
   manifest: '/manifest.json', 
   themeColor: '#E53935', 
   icons: {
-    apple: 'https://placehold.co/180x180.png?text=LQApple', 
+    apple: 'https://firebasestorage.googleapis.com/v0/b/questifyv2-4d669.firebasestorage.app/o/android-chrome-192x192.png?alt=media&token=c25e3afc-1789-4728-9a0a-c0fb411e1b42', 
   },
 };
 
